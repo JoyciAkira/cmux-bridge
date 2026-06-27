@@ -1,0 +1,38 @@
+name: EAS Submit — Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Platform to submit
+        required: true
+        default: all
+        type: choice
+        options: [all, ios, android]
+
+jobs:
+  submit:
+    name: EAS Submit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Submit to stores
+        run: eas submit --platform ${{ github.event.inputs.platform }} --profile production --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          ASC_APP_ID: ${{ secrets.ASC_APP_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}

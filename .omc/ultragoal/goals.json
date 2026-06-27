@@ -1,7 +1,7 @@
 {
   "version": 1,
   "createdAt": "2026-06-27T00:34:11.450Z",
-  "updatedAt": "2026-06-27T00:39:11.678Z",
+  "updatedAt": "2026-06-27T00:41:37.193Z",
   "briefPath": ".omc/ultragoal/brief.md",
   "goalsPath": ".omc/ultragoal/goals.json",
   "ledgerPath": ".omc/ultragoal/ledger.jsonl",
@@ -59,20 +59,23 @@
       "id": "G005-polish",
       "title": "Polish",
       "objective": "Theme, accessibility, performance, scrollback config",
-      "status": "in_progress",
+      "status": "complete",
       "attempt": 1,
       "createdAt": "2026-06-27T00:34:11.450Z",
-      "updatedAt": "2026-06-27T00:39:11.678Z",
-      "startedAt": "2026-06-27T00:39:11.678Z"
+      "updatedAt": "2026-06-27T00:41:36.992Z",
+      "startedAt": "2026-06-27T00:39:11.678Z",
+      "completedAt": "2026-06-27T00:41:36.992Z",
+      "evidence": "src/store/prefs.ts, src/utils/log.ts, TerminalView pinch-to-zoom+reduceMotion, Settings UI (stepper, scrollback, switch), tsc exit 0, pushed faaf281"
     },
     {
       "id": "G006-beta",
       "title": "Beta",
       "objective": "TestFlight + internal Android build, e2e smoke test",
-      "status": "pending",
-      "attempt": 0,
+      "status": "in_progress",
+      "attempt": 1,
       "createdAt": "2026-06-27T00:34:11.450Z",
-      "updatedAt": "2026-06-27T00:34:11.450Z"
+      "updatedAt": "2026-06-27T00:41:37.193Z",
+      "startedAt": "2026-06-27T00:41:37.193Z"
     },
     {
       "id": "G007-launch",
@@ -85,5 +88,5 @@
     }
   ],
   "claudeObjective": "Complete all ultragoal stories in .omc/ultragoal/goals.json: G001-scaffold Scaffold; G002-connect Connect; G003-render Render; G004-notify Notify; G005-polish Polish; G006-beta Beta; G007-launch Launch",
-  "activeGoalId": "G005-polish"
+  "activeGoalId": "G006-beta"
 }

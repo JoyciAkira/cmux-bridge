@@ -15,3 +15,6 @@ web-build/
 *.log
 android/
 ios/
+google-service-account.json
+*.p12
+*.p8
