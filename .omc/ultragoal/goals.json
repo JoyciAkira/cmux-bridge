@@ -1,7 +1,7 @@
 {
   "version": 1,
   "createdAt": "2026-06-27T00:34:11.450Z",
-  "updatedAt": "2026-06-27T00:43:08.990Z",
+  "updatedAt": "2026-06-27T00:45:37.502Z",
   "briefPath": ".omc/ultragoal/brief.md",
   "goalsPath": ".omc/ultragoal/goals.json",
   "ledgerPath": ".omc/ultragoal/ledger.jsonl",
@@ -83,13 +83,14 @@
       "id": "G007-launch",
       "title": "Launch",
       "objective": "App Store + Play Store submission",
-      "status": "in_progress",
+      "status": "complete",
       "attempt": 1,
       "createdAt": "2026-06-27T00:34:11.450Z",
-      "updatedAt": "2026-06-27T00:43:08.990Z",
-      "startedAt": "2026-06-27T00:43:08.990Z"
+      "updatedAt": "2026-06-27T00:45:37.502Z",
+      "startedAt": "2026-06-27T00:43:08.990Z",
+      "evidence": "docs/store-metadata.md, docs/privacy-policy.md, eas.json, GitHub Actions CI/build/submit, tsc exit 0, pushed 0b2669d",
+      "completedAt": "2026-06-27T00:45:37.502Z"
     }
   ],
-  "claudeObjective": "Complete all ultragoal stories in .omc/ultragoal/goals.json: G001-scaffold Scaffold; G002-connect Connect; G003-render Render; G004-notify Notify; G005-polish Polish; G006-beta Beta; G007-launch Launch",
-  "activeGoalId": "G007-launch"
+  "claudeObjective": "Complete all ultragoal stories in .omc/ultragoal/goals.json: G001-scaffold Scaffold; G002-connect Connect; G003-render Render; G004-notify Notify; G005-polish Polish; G006-beta Beta; G007-launch Launch"
 }
