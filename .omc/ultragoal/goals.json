@@ -1,7 +1,7 @@
 {
   "version": 1,
   "createdAt": "2026-06-27T00:34:11.450Z",
-  "updatedAt": "2026-06-27T00:41:37.193Z",
+  "updatedAt": "2026-06-27T00:43:08.990Z",
   "briefPath": ".omc/ultragoal/brief.md",
   "goalsPath": ".omc/ultragoal/goals.json",
   "ledgerPath": ".omc/ultragoal/ledger.jsonl",
@@ -71,22 +71,25 @@
       "id": "G006-beta",
       "title": "Beta",
       "objective": "TestFlight + internal Android build, e2e smoke test",
-      "status": "in_progress",
+      "status": "complete",
       "attempt": 1,
       "createdAt": "2026-06-27T00:34:11.450Z",
-      "updatedAt": "2026-06-27T00:41:37.193Z",
-      "startedAt": "2026-06-27T00:41:37.193Z"
+      "updatedAt": "2026-06-27T00:43:08.811Z",
+      "startedAt": "2026-06-27T00:41:37.193Z",
+      "completedAt": "2026-06-27T00:43:08.811Z",
+      "evidence": "eas.json (dev/preview/production), ci.yml, eas-build.yml, eas-submit.yml, docs/beta-launch-guide.md, tsc exit 0, pushed 7df46bd"
     },
     {
       "id": "G007-launch",
       "title": "Launch",
       "objective": "App Store + Play Store submission",
-      "status": "pending",
-      "attempt": 0,
+      "status": "in_progress",
+      "attempt": 1,
       "createdAt": "2026-06-27T00:34:11.450Z",
-      "updatedAt": "2026-06-27T00:34:11.450Z"
+      "updatedAt": "2026-06-27T00:43:08.990Z",
+      "startedAt": "2026-06-27T00:43:08.990Z"
     }
   ],
   "claudeObjective": "Complete all ultragoal stories in .omc/ultragoal/goals.json: G001-scaffold Scaffold; G002-connect Connect; G003-render Render; G004-notify Notify; G005-polish Polish; G006-beta Beta; G007-launch Launch",
-  "activeGoalId": "G006-beta"
+  "activeGoalId": "G007-launch"
 }
