@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "createdAt": "2026-06-27T00:34:11.450Z",
+  "updatedAt": "2026-06-27T00:35:01.060Z",
+  "briefPath": ".omc/ultragoal/brief.md",
+  "goalsPath": ".omc/ultragoal/goals.json",
+  "ledgerPath": ".omc/ultragoal/ledger.jsonl",
+  "claudeGoalMode": "aggregate",
+  "goals": [
+    {
+      "id": "G001-scaffold",
+      "title": "Scaffold",
+      "objective": "Repo, RN+Expo project, CI config, PRD, CLAUDE.md",
+      "status": "complete",
+      "attempt": 1,
+      "createdAt": "2026-06-27T00:34:11.450Z",
+      "updatedAt": "2026-06-27T00:35:00.021Z",
+      "startedAt": "2026-06-27T00:34:41.350Z",
+      "completedAt": "2026-06-27T00:35:00.021Z",
+      "evidence": "Expo SDK 56 scaffold, tsconfig strict, app.json scheme=cmuxbridge, docs/PRD.md, CLAUDE.md, README.md, MIT LICENSE, tsc --noEmit exit 0"
+    },
+    {
+      "id": "G002-connect",
+      "title": "Connect",
+      "objective": "Relay WebSocket client, workspace list, multi-Mac store",
+      "status": "complete",
+      "attempt": 1,
+      "createdAt": "2026-06-27T00:34:11.450Z",
+      "updatedAt": "2026-06-27T00:35:00.361Z",
+      "startedAt": "2026-06-27T00:35:00.193Z",
+      "completedAt": "2026-06-27T00:35:00.361Z",
+      "evidence": "src/services/relay.ts (TypedEmitter, WebSocket, backoff), src/store/macs.ts (SecureStore), src/hooks/useRelay.ts"
+    },
+    {
+      "id": "G003-render",
+      "title": "Render",
+      "objective": "Terminal renderer (ANSI), InputBar macros, surface navigation",
+      "status": "complete",
+      "attempt": 1,
+      "createdAt": "2026-06-27T00:34:11.450Z",
+      "updatedAt": "2026-06-27T00:35:00.704Z",
+      "startedAt": "2026-06-27T00:35:00.527Z",
+      "completedAt": "2026-06-27T00:35:00.704Z",
+      "evidence": "TerminalView.tsx, InputBar.tsx, WorkspaceRow.tsx, mac/[id].tsx, mac/[id]/[surfaceId].tsx, tsc clean"
+    },
+    {
+      "id": "G004-notify",
+      "title": "Notify",
+      "objective": "Push notifications APNs+FCM, biometric unlock",
+      "status": "complete",
+      "attempt": 1,
+      "createdAt": "2026-06-27T00:34:11.450Z",
+      "updatedAt": "2026-06-27T00:35:01.060Z",
+      "startedAt": "2026-06-27T00:35:00.888Z",
+      "completedAt": "2026-06-27T00:35:01.060Z",
+      "evidence": "src/services/notifications.ts (APNs+FCM), src/hooks/useBiometric.ts (FaceID/TouchID), app.json plugins"
+    },
+    {
+      "id": "G005-polish",
+      "title": "Polish",
+      "objective": "Theme, accessibility, performance, scrollback config",
+      "status": "pending",
+      "attempt": 0,
+      "createdAt": "2026-06-27T00:34:11.450Z",
+      "updatedAt": "2026-06-27T00:34:11.450Z"
+    },
+    {
+      "id": "G006-beta",
+      "title": "Beta",
+      "objective": "TestFlight + internal Android build, e2e smoke test",
+      "status": "pending",
+      "attempt": 0,
+      "createdAt": "2026-06-27T00:34:11.450Z",
+      "updatedAt": "2026-06-27T00:34:11.450Z"
+    },
+    {
+      "id": "G007-launch",
+      "title": "Launch",
+      "objective": "App Store + Play Store submission",
+      "status": "pending",
+      "attempt": 0,
+      "createdAt": "2026-06-27T00:34:11.450Z",
+      "updatedAt": "2026-06-27T00:34:11.450Z"
+    }
+  ],
+  "claudeObjective": "Complete all ultragoal stories in .omc/ultragoal/goals.json: G001-scaffold Scaffold; G002-connect Connect; G003-render Render; G004-notify Notify; G005-polish Polish; G006-beta Beta; G007-launch Launch"
+}
