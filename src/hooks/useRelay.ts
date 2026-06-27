@@ -6,11 +6,13 @@ import {
   RelayMessage,
 } from '../services/relay';
 import { useTerminalStore } from '../store/terminal';
+import { usePrefsStore } from '../store/prefs';
 
 export function useRelay(macId: string, host: string, port = 4399) {
   const [status, setStatus] = useState<RelayStatus>('disconnected');
   const [workspaces, setWorkspaces] = useState<WorkspaceItem[]>([]);
   const appendOutput = useTerminalStore((s) => s.appendOutput);
+  const scrollbackLines = usePrefsStore((s) => s.scrollbackLines);
   const clientRef = useRef(getRelayClient(macId));
 
   useEffect(() => {
@@ -26,7 +28,7 @@ export function useRelay(macId: string, host: string, port = 4399) {
         case 'output': {
           const key = `${msg.workspaceId}:${msg.surfaceId}`;
           const decoded = atob(msg.data);
-          appendOutput(key, decoded);
+          appendOutput(key, decoded, scrollbackLines);
           break;
         }
         case 'ack':

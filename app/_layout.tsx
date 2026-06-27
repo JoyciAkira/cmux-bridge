@@ -2,16 +2,19 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { useMacsStore } from '../src/store/macs';
+import { usePrefsStore } from '../src/store/prefs';
 import { registerForPushNotifications } from '../src/services/notifications';
 import { Colors } from '../src/theme';
 
 export default function RootLayout() {
   const load = useMacsStore((s) => s.load);
+  const loadPrefs = usePrefsStore((s) => s.load);
 
   useEffect(() => {
     load();
+    loadPrefs();
     registerForPushNotifications();
-  }, [load]);
+  }, [load, loadPrefs]);
 
   return (
     <>

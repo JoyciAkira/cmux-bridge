@@ -1,7 +1,7 @@
 {
   "version": 1,
   "createdAt": "2026-06-27T00:34:11.450Z",
-  "updatedAt": "2026-06-27T00:35:01.060Z",
+  "updatedAt": "2026-06-27T00:39:11.678Z",
   "briefPath": ".omc/ultragoal/brief.md",
   "goalsPath": ".omc/ultragoal/goals.json",
   "ledgerPath": ".omc/ultragoal/ledger.jsonl",
@@ -59,10 +59,11 @@
       "id": "G005-polish",
       "title": "Polish",
       "objective": "Theme, accessibility, performance, scrollback config",
-      "status": "pending",
-      "attempt": 0,
+      "status": "in_progress",
+      "attempt": 1,
       "createdAt": "2026-06-27T00:34:11.450Z",
-      "updatedAt": "2026-06-27T00:34:11.450Z"
+      "updatedAt": "2026-06-27T00:39:11.678Z",
+      "startedAt": "2026-06-27T00:39:11.678Z"
     },
     {
       "id": "G006-beta",
@@ -83,5 +84,6 @@
       "updatedAt": "2026-06-27T00:34:11.450Z"
     }
   ],
-  "claudeObjective": "Complete all ultragoal stories in .omc/ultragoal/goals.json: G001-scaffold Scaffold; G002-connect Connect; G003-render Render; G004-notify Notify; G005-polish Polish; G006-beta Beta; G007-launch Launch"
+  "claudeObjective": "Complete all ultragoal stories in .omc/ultragoal/goals.json: G001-scaffold Scaffold; G002-connect Connect; G003-render Render; G004-notify Notify; G005-polish Polish; G006-beta Beta; G007-launch Launch",
+  "activeGoalId": "G005-polish"
 }

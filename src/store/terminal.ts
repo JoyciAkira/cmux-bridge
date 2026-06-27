@@ -13,12 +13,13 @@ interface SurfaceState {
 
 interface TerminalState {
   surfaces: Record<string, SurfaceState>;   // key: `${workspaceId}:${surfaceId}`
-  appendOutput: (key: string, raw: string) => void;
+  appendOutput: (key: string, raw: string, maxLines?: number) => void;
   clearSurface: (key: string) => void;
   setFontSize: (key: string, size: number) => void;
   getSurface: (key: string) => SurfaceState;
 }
 
+// Default; overridden at call site by usePrefsStore().scrollbackLines
 const MAX_LINES = 500;
 
 const defaultSurface = (): SurfaceState => ({ lines: [], nextId: 0, fontSize: 13 });
@@ -28,7 +29,7 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
 
   getSurface: (key) => get().surfaces[key] ?? defaultSurface(),
 
-  appendOutput: (key, raw) => {
+  appendOutput: (key, raw, maxLines = MAX_LINES) => {
     set((state) => {
       const prev = state.surfaces[key] ?? defaultSurface();
       // Split incoming data on newlines, appending to the last partial line
@@ -51,7 +52,7 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
         }
       }
 
-      const trimmed = lines.length > MAX_LINES ? lines.slice(lines.length - MAX_LINES) : lines;
+      const trimmed = lines.length > maxLines ? lines.slice(lines.length - maxLines) : lines;
       return {
         surfaces: {
           ...state.surfaces,
