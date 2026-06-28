@@ -12,7 +12,7 @@ import { useMacsStore } from '../../src/store/macs';
 import { useRelay } from '../../src/hooks/useRelay';
 import WorkspaceRow from '../../src/components/ui/WorkspaceRow';
 import StatusBadge from '../../src/components/ui/StatusBadge';
-import { Colors, Spacing, FontSizes } from '../../src/theme';
+import { Colors, Spacing, FontSizes, Radii } from '../../src/theme';
 
 export default function WorkspacesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -55,7 +55,6 @@ export default function WorkspacesScreen() {
         data={workspaces}
         keyExtractor={(w) => w.id}
         contentContainerStyle={styles.list}
-        ItemSeparatorComponent={() => <View style={{ height: Spacing.sm }} />}
         refreshControl={
           <RefreshControl
             refreshing={status === 'connecting'}
@@ -68,7 +67,6 @@ export default function WorkspacesScreen() {
             <WorkspaceRow
               workspace={item}
               onPress={() => {
-                // If single surface, go directly; else show surfaces inline
                 if (item.surfaces.length === 1) {
                   handleSurfacePress(item.id, item.surfaces[0].id);
                 }
@@ -82,21 +80,26 @@ export default function WorkspacesScreen() {
                     style={styles.surfaceBtn}
                     onPress={() => handleSurfacePress(item.id, s.id)}
                     accessibilityRole="button"
-                    accessibilityLabel={`Open surface ${s.name}`}
+                    accessibilityLabel={`Open surface ${s.title}`}
                   >
-                    <Text style={styles.surfaceName}>{s.name}</Text>
-                    <Text style={styles.surfaceDim}>{s.cols}×{s.rows}</Text>
+                    <View style={styles.surfaceLeft}>
+                      <Text style={styles.surfaceIndex}>#{s.index}</Text>
+                      <Text style={styles.surfaceName} numberOfLines={1}>{s.title}</Text>
+                    </View>
+                    <Text style={styles.chevron}>›</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             )}
           </View>
         )}
+        ItemSeparatorComponent={() => <View style={{ height: Spacing.sm }} />}
         ListEmptyComponent={
           status === 'connected' ? (
             <View style={styles.center}>
-              <Text style={styles.emptyText}>No workspaces found.</Text>
-              <Text style={styles.emptyHint}>Open cmux on your Mac to create one.</Text>
+              <Text style={styles.emptyIcon}>⬚</Text>
+              <Text style={styles.emptyText}>No workspaces found</Text>
+              <Text style={styles.emptyHint}>Open a workspace in cmux on your Mac</Text>
             </View>
           ) : null
         }
@@ -118,23 +121,28 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   host: { color: Colors.textMuted, fontSize: FontSizes.sm, fontFamily: 'monospace' },
-  list: { padding: Spacing.md },
-  workspaceBlock: { gap: Spacing.xs },
-  surfaces: { paddingLeft: Spacing.md, gap: Spacing.xs },
+  list: { padding: Spacing.md, gap: Spacing.sm },
+  workspaceBlock: { gap: 2 },
+  surfaces: { marginLeft: Spacing.lg, gap: 2 },
   surfaceBtn: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: Colors.surfaceHigh,
-    borderRadius: 6,
+    borderRadius: Radii.sm,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    paddingVertical: 10,
     borderWidth: 1,
     borderColor: Colors.border,
+    borderTopWidth: 0,
   },
-  surfaceName: { color: Colors.text, fontSize: FontSizes.sm },
-  surfaceDim: { color: Colors.textMuted, fontSize: FontSizes.sm, fontFamily: 'monospace' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80 },
-  emptyText: { color: Colors.textMuted, fontSize: FontSizes.md },
-  emptyHint: { color: Colors.textDim, fontSize: FontSizes.sm, marginTop: 4 },
+  surfaceLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flex: 1 },
+  surfaceIndex: { color: Colors.textDim, fontSize: FontSizes.sm, fontFamily: 'monospace', width: 20 },
+  surfaceName: { color: Colors.textMuted, fontSize: FontSizes.sm, flex: 1 },
+  chevron: { color: Colors.textDim, fontSize: 16 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: Spacing.sm },
+  emptyIcon: { fontSize: 40, color: Colors.textDim },
+  emptyText: { color: Colors.textMuted, fontSize: FontSizes.md, fontWeight: '600' },
+  emptyHint: { color: Colors.textDim, fontSize: FontSizes.sm },
   errorText: { color: Colors.error, fontSize: FontSizes.md },
 });

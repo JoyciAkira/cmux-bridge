@@ -3,6 +3,9 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { AgentEvent } from './relay';
 
+// #region agent log
+fetch('http://127.0.0.1:7906/ingest/a0caf8cc-7ce6-41cd-831e-76d0b1f2904e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'8eb336'},body:JSON.stringify({sessionId:'8eb336',location:'notifications.ts:module-init',message:'setNotificationHandler called',data:{},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
+// #endregion
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,

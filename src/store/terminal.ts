@@ -12,8 +12,10 @@ interface SurfaceState {
 }
 
 interface TerminalState {
-  surfaces: Record<string, SurfaceState>;   // key: `${workspaceId}:${surfaceId}`
+  surfaces: Record<string, SurfaceState>;   // key: surfaceId
   appendOutput: (key: string, raw: string, maxLines?: number) => void;
+  setScreen: (key: string, rows: string[], cols: number, cursor: { x: number; y: number }) => void;
+  applyDiff: (key: string, ops: Array<{ op: string; y?: number; x?: number; text?: string }>) => void;
   clearSurface: (key: string) => void;
   setFontSize: (key: string, size: number) => void;
   getSurface: (key: string) => SurfaceState;
@@ -28,6 +30,32 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
   surfaces: {},
 
   getSurface: (key) => get().surfaces[key] ?? defaultSurface(),
+
+  setScreen: (key, rows, _cols, _cursor) => {
+    set((state) => {
+      const prev = state.surfaces[key] ?? defaultSurface();
+      const lines = rows.map((text, i) => ({ id: i, text }));
+      return { surfaces: { ...state.surfaces, [key]: { ...prev, lines, nextId: rows.length } } };
+    });
+  },
+
+  applyDiff: (key, ops) => {
+    set((state) => {
+      const prev = state.surfaces[key] ?? defaultSurface();
+      const lines = [...prev.lines];
+      let nextId = prev.nextId;
+      for (const op of ops) {
+        if (op.op === 'clear') {
+          lines.length = 0;
+          nextId = 0;
+        } else if (op.op === 'row' && op.y !== undefined) {
+          while (lines.length <= op.y) lines.push({ id: nextId++, text: '' });
+          lines[op.y] = { id: lines[op.y].id, text: op.text ?? '' };
+        }
+      }
+      return { surfaces: { ...state.surfaces, [key]: { ...prev, lines: [...lines], nextId } } };
+    });
+  },
 
   appendOutput: (key, raw, maxLines = MAX_LINES) => {
     set((state) => {

@@ -1,46 +1,35 @@
-import {
-  TouchableOpacity,
-  View,
-  Text,
-  StyleSheet,
-} from 'react-native';
-import { WorkspaceItem } from '../../services/relay';
-import StatusBadge from './StatusBadge';
+import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
+import { WorkspaceWithSurfaces } from '../../hooks/useRelay';
 import { Colors, Spacing, Radii, FontSizes } from '../../theme';
 
 interface Props {
-  workspace: WorkspaceItem;
+  workspace: WorkspaceWithSurfaces;
   onPress: () => void;
 }
 
 export default function WorkspaceRow({ workspace, onPress }: Props) {
   const surfaceCount = workspace.surfaces.length;
-  const ago = formatAgo(workspace.lastActivity);
 
   return (
     <TouchableOpacity
       style={styles.row}
       onPress={onPress}
+      activeOpacity={0.7}
       accessibilityRole="button"
       accessibilityLabel={`Open workspace ${workspace.name}`}
     >
-      <View style={styles.left}>
+      <View style={styles.indexBox}>
+        <Text style={styles.index}>{workspace.index + 1}</Text>
+      </View>
+      <View style={styles.info}>
         <Text style={styles.name} numberOfLines={1}>{workspace.name}</Text>
         <Text style={styles.meta}>
-          {surfaceCount} surface{surfaceCount !== 1 ? 's' : ''} · {ago}
+          {surfaceCount} surface{surfaceCount !== 1 ? 's' : ''}
         </Text>
       </View>
-      <StatusBadge status={workspace.status} />
+      <Text style={styles.chevron}>›</Text>
     </TouchableOpacity>
   );
-}
-
-function formatAgo(ts: number): string {
-  const diff = Math.floor((Date.now() - ts) / 1000);
-  if (diff < 60) return `${diff}s ago`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
 }
 
 const styles = StyleSheet.create({
@@ -51,21 +40,20 @@ const styles = StyleSheet.create({
     borderRadius: Radii.md,
     borderWidth: 1,
     borderColor: Colors.border,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
+    padding: Spacing.md,
     gap: Spacing.md,
   },
-  left: {
-    flex: 1,
-    gap: 3,
+  indexBox: {
+    width: 28,
+    height: 28,
+    borderRadius: Radii.sm,
+    backgroundColor: Colors.accentDim,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  name: {
-    color: Colors.text,
-    fontSize: FontSizes.md,
-    fontWeight: '600',
-  },
-  meta: {
-    color: Colors.textMuted,
-    fontSize: FontSizes.sm,
-  },
+  index: { color: Colors.accent, fontSize: FontSizes.sm, fontWeight: '700', fontFamily: 'monospace' },
+  info: { flex: 1, gap: 2 },
+  name: { color: Colors.text, fontSize: FontSizes.md, fontWeight: '600' },
+  meta: { color: Colors.textMuted, fontSize: FontSizes.sm },
+  chevron: { color: Colors.textDim, fontSize: 20, fontWeight: '300' },
 });

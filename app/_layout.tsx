@@ -11,10 +11,33 @@ export default function RootLayout() {
   const loadPrefs = usePrefsStore((s) => s.load);
 
   useEffect(() => {
-    load();
+    // #region agent log
+    fetch('http://127.0.0.1:7906/ingest/a0caf8cc-7ce6-41cd-831e-76d0b1f2904e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'8eb336'},body:JSON.stringify({sessionId:'8eb336',location:'app/_layout.tsx:14',message:'RootLayout mounted — starting load + registerForPushNotifications',data:{},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+    load().then(() => {
+      // #region agent log
+      fetch('http://127.0.0.1:7906/ingest/a0caf8cc-7ce6-41cd-831e-76d0b1f2904e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'8eb336'},body:JSON.stringify({sessionId:'8eb336',location:'app/_layout.tsx:load.then',message:'useMacsStore.load() completed',data:{},timestamp:Date.now(),hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
+    }).catch((err: unknown) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7906/ingest/a0caf8cc-7ce6-41cd-831e-76d0b1f2904e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'8eb336'},body:JSON.stringify({sessionId:'8eb336',location:'app/_layout.tsx:load.catch',message:'useMacsStore.load() FAILED',data:{error:String(err)},timestamp:Date.now(),hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
+    });
     loadPrefs();
-    registerForPushNotifications();
+    registerForPushNotifications().then((token) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7906/ingest/a0caf8cc-7ce6-41cd-831e-76d0b1f2904e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'8eb336'},body:JSON.stringify({sessionId:'8eb336',location:'app/_layout.tsx:push.then',message:'registerForPushNotifications completed',data:{token},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+    }).catch((err: unknown) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7906/ingest/a0caf8cc-7ce6-41cd-831e-76d0b1f2904e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'8eb336'},body:JSON.stringify({sessionId:'8eb336',location:'app/_layout.tsx:push.catch',message:'registerForPushNotifications FAILED',data:{error:String(err)},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+    });
   }, [load, loadPrefs]);
+
+  // #region agent log
+  fetch('http://127.0.0.1:7906/ingest/a0caf8cc-7ce6-41cd-831e-76d0b1f2904e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'8eb336'},body:JSON.stringify({sessionId:'8eb336',location:'app/_layout.tsx:render',message:'RootLayout render — Stack screens defined',data:{screens:['index','onboarding','tabs','mac/[id]','mac/[id]/[surfaceId]']},timestamp:Date.now(),hypothesisId:'A-D-E'})}).catch(()=>{});
+  // #endregion
 
   return (
     <>

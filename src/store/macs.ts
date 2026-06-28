@@ -17,7 +17,7 @@ interface MacsState {
   update: (id: string, patch: Partial<Pick<MacConnection, 'label' | 'host' | 'port'>>) => Promise<void>;
 }
 
-const STORE_KEY = 'cmuxbridge:macs';
+const STORE_KEY = 'cmuxbridge_macs';
 
 function uuid(): string {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {

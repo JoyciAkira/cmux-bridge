@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useMacsStore } from '../src/store/macs';
@@ -18,7 +19,7 @@ export default function OnboardingScreen() {
   const [label, setLabel] = useState('My Mac');
   const [host, setHost] = useState('');
   const [port, setPort] = useState('4399');
-  const [testing, setTesting] = useState(false);
+  const [testing, setTesting] = useState<'idle' | 'registering' | 'connecting'>('idle');
 
   const handleSave = useCallback(async () => {
     if (!host.trim()) {
@@ -31,10 +32,9 @@ export default function OnboardingScreen() {
       return;
     }
 
-    setTesting(true);
-    // Quick connectivity test: attempt WebSocket connection with 5s timeout
-    const ok = await testConnection(host.trim(), portNum);
-    setTesting(false);
+    setTesting('registering');
+    const ok = await testConnection(host.trim(), portNum, (s) => setTesting(s));
+    setTesting('idle');
 
     if (!ok) {
       Alert.alert(
@@ -47,7 +47,6 @@ export default function OnboardingScreen() {
       );
       return;
     }
-
     saveAndGo();
   }, [label, host, port, add]);
 
@@ -59,52 +58,83 @@ export default function OnboardingScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={styles.root}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.form}>
-        <Text style={styles.heading}>Add your Mac</Text>
-        <Text style={styles.subtitle}>
-          Enter your Mac's Tailscale IP and the cmux-relay port.
-        </Text>
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <View style={styles.header}>
+          <View style={styles.logoBox}>
+            <Text style={styles.logoIcon}>⌘</Text>
+          </View>
+          <Text style={styles.heading}>Connect your Mac</Text>
+          <Text style={styles.subtitle}>
+            Enter your Mac's Tailscale IP and the cmux-relay port.
+          </Text>
+        </View>
 
-        <Field label="Label" value={label} onChangeText={setLabel} placeholder="Work MacBook" />
-        <Field
-          label="Tailscale IP"
-          value={host}
-          onChangeText={setHost}
-          placeholder="100.x.x.x"
-          keyboardType="decimal-pad"
-          autoFocus
-        />
-        <Field
-          label="Port"
-          value={port}
-          onChangeText={setPort}
-          placeholder="4399"
-          keyboardType="number-pad"
-        />
+        <View style={styles.form}>
+          <Field label="Label" value={label} onChangeText={setLabel} placeholder="Work MacBook" />
+          <Field
+            label="Tailscale IP"
+            value={host}
+            onChangeText={setHost}
+            placeholder="100.x.x.x"
+            keyboardType="decimal-pad"
+            autoFocus
+          />
+          <Field
+            label="Port"
+            value={port}
+            onChangeText={setPort}
+            placeholder="4399"
+            keyboardType="number-pad"
+          />
 
-        <TouchableOpacity
-          style={[styles.btn, testing && styles.btnDisabled]}
-          onPress={handleSave}
-          disabled={testing}
-          accessibilityRole="button"
-        >
-          <Text style={styles.btnLabel}>{testing ? 'Testing connection…' : 'Save & Connect'}</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={[styles.btn, testing !== 'idle' && styles.btnDisabled]}
+            onPress={handleSave}
+            disabled={testing !== 'idle'}
+            accessibilityRole="button"
+          >
+            <Text style={styles.btnLabel}>
+              {testing === 'registering' ? 'Registering…' : testing === 'connecting' ? 'Connecting…' : 'Save & Connect'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.setupBox}>
+          <Text style={styles.setupTitle}>Setup cmux-relay on your Mac</Text>
+          <Text style={styles.setupStep}>1. Open a terminal in cmux</Text>
+          <Text style={styles.setupCode}>~/.cmuxremote/bin/cmux-relay serve \{'\n'}  --config ~/.cmuxremote/relay.json</Text>
+          <Text style={styles.setupStep}>2. In cmux Settings → Socket Control Mode → Full open access</Text>
+          <Text style={styles.setupStep}>3. Make sure Tailscale is active on both devices</Text>
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-async function testConnection(host: string, port: number): Promise<boolean> {
-  return new Promise((resolve) => {
-    const ws = new WebSocket(`ws://${host}:${port}/ws`);
-    const timer = setTimeout(() => { ws.close(); resolve(false); }, 5000);
-    ws.onopen = () => { clearTimeout(timer); ws.close(); resolve(true); };
-    ws.onerror = () => { clearTimeout(timer); resolve(false); };
-  });
+async function testConnection(
+  host: string,
+  port: number,
+  onStatus: (s: 'registering' | 'connecting') => void,
+): Promise<boolean> {
+  try {
+    onStatus('registering');
+    const res = await fetch(`http://${host}:${port}/v1/devices/me/register`, { method: 'POST' });
+    if (!res.ok) return false;
+    const { token } = await res.json() as { token: string };
+
+    onStatus('connecting');
+    return await new Promise((resolve) => {
+      const ws = new WebSocket(`ws://${host}:${port}/v1/ws`, [`bearer.${token}`]);
+      const timer = setTimeout(() => { ws.close(); resolve(false); }, 5000);
+      ws.onopen = () => { clearTimeout(timer); ws.close(); resolve(true); };
+      ws.onerror = () => { clearTimeout(timer); resolve(false); };
+    });
+  } catch {
+    return false;
+  }
 }
 
 function Field({
@@ -127,33 +157,51 @@ function Field({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  form: {
-    flex: 1,
-    padding: Spacing.xl,
-    gap: Spacing.lg,
+  root: { flex: 1, backgroundColor: Colors.background },
+  scroll: { padding: Spacing.xl, gap: Spacing.xl },
+  header: { alignItems: 'center', gap: Spacing.md, paddingTop: Spacing.xl },
+  logoBox: {
+    width: 64,
+    height: 64,
+    borderRadius: Radii.lg,
+    backgroundColor: Colors.accentDim,
+    alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.accent,
   },
-  heading: {
-    color: Colors.text,
-    fontSize: FontSizes.xxl,
-    fontWeight: '700',
-  },
-  subtitle: {
-    color: Colors.textMuted,
-    fontSize: FontSizes.md,
-    lineHeight: 22,
-    marginTop: -Spacing.sm,
-  },
+  logoIcon: { fontSize: 32, color: Colors.accent },
+  heading: { color: Colors.text, fontSize: FontSizes.xxl, fontWeight: '700', textAlign: 'center' },
+  subtitle: { color: Colors.textMuted, fontSize: FontSizes.md, textAlign: 'center', lineHeight: 22 },
+  form: { gap: Spacing.md },
   btn: {
     backgroundColor: Colors.accent,
     borderRadius: Radii.md,
     paddingVertical: Spacing.md,
     alignItems: 'center',
-    marginTop: Spacing.md,
+    marginTop: Spacing.sm,
   },
   btnDisabled: { opacity: 0.5 },
   btnLabel: { color: Colors.background, fontSize: FontSizes.md, fontWeight: '700' },
+  setupBox: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radii.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.md,
+    gap: Spacing.sm,
+  },
+  setupTitle: { color: Colors.text, fontSize: FontSizes.sm, fontWeight: '600', marginBottom: 4 },
+  setupStep: { color: Colors.textMuted, fontSize: FontSizes.sm, lineHeight: 20 },
+  setupCode: {
+    color: Colors.accent,
+    fontSize: 11,
+    fontFamily: 'monospace',
+    backgroundColor: Colors.surfaceHigh,
+    borderRadius: Radii.sm,
+    padding: Spacing.sm,
+    lineHeight: 18,
+  },
 });
 
 const fieldStyles = StyleSheet.create({

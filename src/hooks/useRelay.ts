@@ -2,85 +2,82 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import {
   getRelayClient,
   RelayStatus,
-  WorkspaceItem,
-  RelayMessage,
+  Workspace,
+  Surface,
+  PushFrame,
+  ScreenFull,
+  ScreenDiff,
+  RelayClient,
 } from '../services/relay';
 import { useTerminalStore } from '../store/terminal';
-import { usePrefsStore } from '../store/prefs';
+
+export interface WorkspaceWithSurfaces extends Workspace {
+  surfaces: Surface[];
+}
 
 export function useRelay(macId: string, host: string, port = 4399) {
   const [status, setStatus] = useState<RelayStatus>('disconnected');
-  const [workspaces, setWorkspaces] = useState<WorkspaceItem[]>([]);
-  const appendOutput = useTerminalStore((s) => s.appendOutput);
-  const scrollbackLines = usePrefsStore((s) => s.scrollbackLines);
-  const clientRef = useRef(getRelayClient(macId));
+  const [workspaces, setWorkspaces] = useState<WorkspaceWithSurfaces[]>([]);
+  const clientRef = useRef<RelayClient>(getRelayClient(macId));
+  const setScreen = useTerminalStore((s) => s.setScreen);
+  const applyDiff = useTerminalStore((s) => s.applyDiff);
+
+  const loadWorkspaces = useCallback(async (client: RelayClient) => {
+    try {
+      const ws = await client.listWorkspaces();
+      const withSurfaces = await Promise.all(
+        ws.map(async (w) => {
+          const surfaces = await client.listSurfaces(w.id);
+          return { ...w, surfaces };
+        }),
+      );
+      setWorkspaces(withSurfaces);
+    } catch { /* retry on reconnect */ }
+  }, []);
 
   useEffect(() => {
     const client = clientRef.current;
 
-    const onStatus = (s: RelayStatus) => setStatus(s);
+    const onStatus = (s: RelayStatus) => {
+      setStatus(s);
+      if (s === 'connected') loadWorkspaces(client);
+    };
 
-    const onMessage = (msg: RelayMessage) => {
-      switch (msg.type) {
-        case 'workspaces':
-          setWorkspaces(msg.items);
-          break;
-        case 'output': {
-          const key = `${msg.workspaceId}:${msg.surfaceId}`;
-          const decoded = atob(msg.data);
-          appendOutput(key, decoded, scrollbackLines);
-          break;
-        }
-        case 'ack':
-          client.list();
-          break;
-        case 'error':
-          // relay reported an error — status stays connected, surface may be broken
-          break;
-        case 'event':
-          // handled by notifications service — nothing to do in UI layer
-          break;
-        default: {
-          // exhaustiveness: if relay adds a new type, this catches it at compile time
-          const _exhaustive: never = msg;
-          void _exhaustive;
-        }
+    const onPush = (frame: PushFrame) => {
+      if (frame.type === 'screen.full') {
+        const f = frame as ScreenFull;
+        setScreen(f.surface_id, f.rows, f.cols, f.cursor);
+      } else if (frame.type === 'screen.diff') {
+        const f = frame as ScreenDiff;
+        applyDiff(f.surface_id, f.ops as Array<{ op: string; y?: number; x?: number; text?: string }>);
       }
     };
 
     client.on('status', onStatus);
-    client.on('message', onMessage);
-    client.connect(host, port);
+    client.on('push', onPush);
+    if (host) client.connect(host, port);
 
     return () => {
       client.off('status', onStatus);
-      client.off('message', onMessage);
-      // Do NOT disconnect here — connection survives navigation
+      client.off('push', onPush);
     };
-  }, [macId, host, port, appendOutput]);
+  }, [macId, host, port, loadWorkspaces, setScreen, applyDiff]);
 
-  const subscribe = useCallback(
-    (workspaceId: string, surfaceId: string) => {
-      clientRef.current.subscribe(workspaceId, surfaceId);
-    },
-    [],
-  );
+  const subscribe = useCallback((workspaceId: string, surfaceId: string) => {
+    clientRef.current.subscribe(workspaceId, surfaceId).catch(() => {});
+  }, []);
 
-  const unsubscribe = useCallback(
-    (workspaceId: string, surfaceId: string) => {
-      clientRef.current.unsubscribe(workspaceId, surfaceId);
-    },
-    [],
-  );
+  const unsubscribe = useCallback((_workspaceId: string, surfaceId: string) => {
+    clientRef.current.unsubscribe(surfaceId).catch(() => {});
+  }, []);
 
-  const sendInput = useCallback((data: string) => {
-    // btoa encodes arbitrary string to base64
-    clientRef.current.sendInput(btoa(data));
+  const sendInput = useCallback((surfaceId: string, text: string) => {
+    clientRef.current.sendInput(surfaceId, text).catch(() => {});
   }, []);
 
   const refresh = useCallback(() => {
-    clientRef.current.list();
-  }, []);
+    loadWorkspaces(clientRef.current);
+  }, [loadWorkspaces]);
 
   return { status, workspaces, subscribe, unsubscribe, sendInput, refresh };
 }

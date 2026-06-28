@@ -23,7 +23,7 @@ interface Props extends Omit<ScrollViewProps, 'children'> {
 }
 
 const TerminalView = React.memo(({ surfaceKey, ...scrollProps }: Props) => {
-  const lines = useTerminalStore((s) => s.surfaces[surfaceKey]?.lines ?? []);
+  const lines = useTerminalStore((s) => s.surfaces[surfaceKey]?.lines) ?? [];
   const reduceMotion = usePrefsStore((s) => s.reduceMotion);
   const globalFontSize = usePrefsStore((s) => s.terminalFontSize);
   const setFontSize = usePrefsStore((s) => s.setFontSize);

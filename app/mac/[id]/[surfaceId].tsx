@@ -18,7 +18,7 @@ export default function TerminalScreen() {
 
   const mac = useMacsStore((s) => s.macs.find((m) => m.id === id));
   const navigation = useNavigation();
-  const surfaceKey = `${workspaceId}:${surfaceId}`;
+  const surfaceKey = surfaceId;
 
   const { subscribe, unsubscribe, sendInput } = useRelay(
     id,
@@ -52,8 +52,8 @@ export default function TerminalScreen() {
   }, [surfaceId, navigation]);
 
   const handleSend = useCallback(
-    (text: string) => sendInput(text),
-    [sendInput],
+    (text: string) => sendInput(surfaceId, text),
+    [sendInput, surfaceId],
   );
 
   return (
