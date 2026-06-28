@@ -11,15 +11,14 @@ import { useTerminalStore } from '../../store/terminal';
 import { usePrefsStore } from '../../store/prefs';
 import { Colors } from '../../theme';
 
-// Lightweight ANSI stripper for v1.0 plain-text render.
-// Full colour rendering deferred to v1.1 via canvas path.
+// eslint-disable-next-line no-control-regex
+const ANSI_RE = /\x1B\[[0-9;]*[mGKHFJABCDr]|\x1B[=>]|\r/g;
 function stripAnsi(str: string): string {
-  // eslint-disable-next-line no-control-regex
-  return str.replace(/\x1B\[[0-9;]*[mGKHF]/g, '');
+  return str.replace(ANSI_RE, '');
 }
 
 interface Props extends Omit<ScrollViewProps, 'children'> {
-  surfaceKey: string;   // `${workspaceId}:${surfaceId}`
+  surfaceKey: string;
 }
 
 const TerminalView = React.memo(({ surfaceKey, ...scrollProps }: Props) => {
@@ -30,16 +29,24 @@ const TerminalView = React.memo(({ surfaceKey, ...scrollProps }: Props) => {
 
   const [localFontSize, setLocalFontSize] = useState(globalFontSize);
   const scrollRef = useRef<ScrollView>(null);
+  const userScrolledUp = useRef(false);
 
-  // Keep local font size in sync when global pref changes
   useEffect(() => { setLocalFontSize(globalFontSize); }, [globalFontSize]);
 
-  // Auto-scroll to bottom on new output, respecting reduced motion
+  // Scroll to end on any content change, unless user has scrolled up
   useEffect(() => {
-    scrollRef.current?.scrollToEnd({ animated: !reduceMotion });
-  }, [lines.length, reduceMotion]);
+    if (!userScrolledUp.current) {
+      scrollRef.current?.scrollToEnd({ animated: !reduceMotion });
+    }
+  });
 
-  // Pinch-to-zoom: track two-finger distance
+  const handleScrollEnd = useCallback((e: { nativeEvent: { contentOffset: { y: number }; contentSize: { height: number }; layoutMeasurement: { height: number } } }) => {
+    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+    const distFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
+    userScrolledUp.current = distFromBottom > 40;
+  }, []);
+
+  // Pinch-to-zoom
   const pinchRef = useRef<{ dist: number; size: number } | null>(null);
 
   const handleTouchStart = useCallback((e: GestureResponderEvent) => {
@@ -68,14 +75,17 @@ const TerminalView = React.memo(({ surfaceKey, ...scrollProps }: Props) => {
     }
   }, [localFontSize, setFontSize]);
 
-  const lineHeight = Math.round(localFontSize * 1.4);
+  const lineHeight = Math.round(localFontSize * 1.5);
 
   return (
     <ScrollView
       ref={scrollRef}
       style={styles.container}
       contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
+      showsVerticalScrollIndicator={true}
+      indicatorStyle="white"
+      onScrollEndDrag={handleScrollEnd}
+      onMomentumScrollEnd={handleScrollEnd}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -88,12 +98,11 @@ const TerminalView = React.memo(({ surfaceKey, ...scrollProps }: Props) => {
           key={line.id}
           style={[styles.line, { fontSize: localFontSize, lineHeight }]}
           selectable
-          accessibilityElementsHidden={false}
         >
-          {stripAnsi(line.text)}
+          {stripAnsi(line.text) || ' '}
         </Text>
       ))}
-      <View style={styles.cursor} accessibilityElementsHidden />
+      <View style={styles.cursor} />
     </ScrollView>
   );
 });
@@ -107,8 +116,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.terminalBg,
   },
   content: {
-    padding: 8,
-    paddingBottom: 24,
+    padding: 10,
+    paddingBottom: 32,
+    flexGrow: 1,
+    justifyContent: 'flex-end',
   },
   line: {
     fontFamily: 'monospace',
@@ -117,8 +128,9 @@ const styles = StyleSheet.create({
   },
   cursor: {
     width: 8,
-    height: 2,
+    height: 14,
     backgroundColor: Colors.terminalCursor,
     marginTop: 2,
+    opacity: 0.8,
   },
 });

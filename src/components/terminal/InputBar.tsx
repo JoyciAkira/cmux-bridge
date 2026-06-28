@@ -6,6 +6,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { Colors, Spacing, FontSizes, Radii } from '../../theme';
 
@@ -15,21 +16,21 @@ interface Props {
 
 const MACROS: Array<{ label: string; value: string }> = [
   { label: 'ctrl+c', value: '\x03' },
-  { label: 'ctrl+z', value: '\x1A' },
   { label: 'ctrl+d', value: '\x04' },
+  { label: 'ctrl+z', value: '\x1A' },
   { label: 'esc',    value: '\x1B' },
   { label: 'tab',    value: '\t' },
   { label: '↑',      value: '\x1B[A' },
   { label: '↓',      value: '\x1B[B' },
-  { label: '↶',      value: '\x1B[D' },
-  { label: '↷',      value: '\x1B[C' },
+  { label: '←',      value: '\x1B[D' },
+  { label: '→',      value: '\x1B[C' },
 ];
 
 export default function InputBar({ onSend }: Props) {
   const [text, setText] = useState('');
 
   const handleSend = useCallback(() => {
-    if (text.trim().length === 0) return;
+    if (!text.trim()) return;
     onSend(text + '\n');
     setText('');
   }, [text, onSend]);
@@ -41,6 +42,7 @@ export default function InputBar({ onSend }: Props) {
         showsHorizontalScrollIndicator={false}
         style={styles.macroScroll}
         contentContainerStyle={styles.macroContent}
+        keyboardShouldPersistTaps="always"
       >
         {MACROS.map((m) => (
           <TouchableOpacity
@@ -68,17 +70,19 @@ export default function InputBar({ onSend }: Props) {
           returnKeyType="send"
           onSubmitEditing={handleSend}
           selectionColor={Colors.accent}
+          multiline={false}
         />
         <TouchableOpacity
-          style={[styles.sendBtn, text.trim().length === 0 && styles.sendBtnDisabled]}
+          style={[styles.sendBtn, !text.trim() && styles.sendBtnDisabled]}
           onPress={handleSend}
-          disabled={text.trim().length === 0}
+          disabled={!text.trim()}
           accessibilityLabel="Send command"
           accessibilityRole="button"
         >
           <Text style={styles.sendLabel}>↵</Text>
         </TouchableOpacity>
       </View>
+      {Platform.OS === 'ios' && <View style={styles.homeIndicator} />}
     </View>
   );
 }
@@ -86,36 +90,38 @@ export default function InputBar({ onSend }: Props) {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: Colors.surface,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: Colors.border,
   },
   macroScroll: {
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Colors.border,
   },
   macroContent: {
-    flexDirection: 'row',
     paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    gap: Spacing.xs,
+    paddingVertical: 6,
+    gap: 6,
+    alignItems: 'center',
   },
   macroBtn: {
     backgroundColor: Colors.surfaceHigh,
     borderRadius: Radii.sm,
-    paddingHorizontal: Spacing.sm,
+    paddingHorizontal: 10,
     paddingVertical: 5,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: Colors.border,
+    minWidth: 44,
+    alignItems: 'center',
   },
   macroLabel: {
-    color: Colors.text,
+    color: Colors.textMuted,
     fontSize: FontSizes.sm,
     fontFamily: 'monospace',
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.sm,
     gap: Spacing.sm,
   },
@@ -123,19 +129,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.surfaceHigh,
     borderRadius: Radii.sm,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: Colors.border,
     color: Colors.text,
     fontSize: FontSizes.md,
     fontFamily: 'monospace',
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    paddingVertical: 9,
+    minHeight: 38,
   },
   sendBtn: {
     backgroundColor: Colors.accent,
     borderRadius: Radii.sm,
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -145,7 +152,8 @@ const styles = StyleSheet.create({
   },
   sendLabel: {
     color: Colors.background,
-    fontSize: FontSizes.xl,
+    fontSize: FontSizes.lg,
     fontWeight: '700',
   },
+  homeIndicator: { height: 8 },
 });
