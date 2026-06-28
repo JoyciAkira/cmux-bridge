@@ -13,6 +13,7 @@ import { useTerminalStore } from '../store/terminal';
 
 export interface WorkspaceWithSurfaces extends Workspace {
   surfaces: Surface[];
+  agentActive?: boolean;
 }
 
 export function useRelay(macId: string, host: string, port = 4399) {
@@ -28,7 +29,7 @@ export function useRelay(macId: string, host: string, port = 4399) {
       const withSurfaces = await Promise.all(
         ws.map(async (w) => {
           const surfaces = await client.listSurfaces(w.id);
-          return { ...w, surfaces };
+          return { ...w, surfaces, agentActive: false };
         }),
       );
       setWorkspaces(withSurfaces);
@@ -50,6 +51,31 @@ export function useRelay(macId: string, host: string, port = 4399) {
       } else if (frame.type === 'screen.diff') {
         const f = frame as ScreenDiff;
         applyDiff(f.surface_id, f.ops as Array<{ op: string; y?: number; x?: number; text?: string }>);
+      } else if (frame.type === 'event') {
+        const ev = frame as { type: 'event'; name: string; payload: Record<string, unknown> };
+        const { name, payload } = ev;
+
+        // Fix 9: badge agent attivo basato su eventi agent.hook.*
+        if (name.startsWith('agent.hook.') || name === 'notification.requested') {
+          const wsId = payload.workspace_id as string | undefined;
+          if (wsId) {
+            const isActive = !name.includes('SubagentStop') && !name.includes('PostToolUse');
+            setWorkspaces((prev) =>
+              prev.map((w) => w.id === wsId ? { ...w, agentActive: isActive } : w),
+            );
+          }
+        }
+
+        // Fix 8: aggiorna titolo surface da eventi workspace.selected
+        if (name === 'workspace.selected') {
+          const wsId = payload.workspace_id as string | undefined;
+          const title = payload.title as string | undefined;
+          if (wsId && title) {
+            setWorkspaces((prev) =>
+              prev.map((w) => w.id === wsId ? { ...w, name: title } : w),
+            );
+          }
+        }
       }
     };
 

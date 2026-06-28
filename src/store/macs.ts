@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
+import { destroyRelayClient } from '../services/relay';
+import { useTerminalStore } from './terminal';
 
 export interface MacConnection {
   id: string;           // uuid
@@ -49,6 +51,8 @@ export const useMacsStore = create<MacsState>((set, get) => ({
   },
 
   remove: async (id) => {
+    destroyRelayClient(id);
+    useTerminalStore.getState().clearAllSurfaces();
     const macs = get().macs.filter((m) => m.id !== id);
     set({ macs });
     await persist(macs);

@@ -8,8 +8,9 @@ import {
   Alert,
 } from 'react-native';
 import { router } from 'expo-router';
-import { useMacsStore } from '../../src/store/macs';
+import { useMacsStore, MacConnection } from '../../src/store/macs';
 import { getRelayClient } from '../../src/services/relay';
+import { useRelayStatus } from '../../src/hooks/useRelayStatus';
 import MacCard from '../../src/components/ui/MacCard';
 import { Colors, Spacing, FontSizes, Radii } from '../../src/theme';
 import { useBiometric } from '../../src/hooks/useBiometric';
@@ -23,7 +24,8 @@ export default function MacsScreen() {
   const handlePress = useCallback(
     async (macId: string, host: string, port: number) => {
       const bio = await prompt('Authenticate to connect to your Mac');
-      if (bio === 'cancelled') return;
+      if (bio === 'cancelled') return; // user explicitly cancelled — respect it
+      // 'success' or 'unsupported' both proceed
 
       setConnecting(macId);
       const client = getRelayClient(macId);
@@ -75,9 +77,9 @@ export default function MacsScreen() {
         contentContainerStyle={styles.list}
         ItemSeparatorComponent={() => <View style={styles.sep} />}
         renderItem={({ item }) => (
-          <MacCard
-            mac={item}
-            status={connecting === item.id ? 'connecting' : getRelayClient(item.id).status}
+          <MacCardRow
+            item={item}
+            connecting={connecting === item.id}
             onPress={() => handlePress(item.id, item.host, item.port)}
             onLongPress={() => handleLongPress(item.id, item.label)}
           />
@@ -93,6 +95,25 @@ export default function MacsScreen() {
         }
       />
     </View>
+  );
+}
+
+function MacCardRow({
+  item, connecting, onPress, onLongPress,
+}: {
+  item: MacConnection;
+  connecting: boolean;
+  onPress: () => void;
+  onLongPress: () => void;
+}) {
+  const liveStatus = useRelayStatus(item.id);
+  return (
+    <MacCard
+      mac={item}
+      status={connecting ? 'connecting' : liveStatus}
+      onPress={onPress}
+      onLongPress={onLongPress}
+    />
   );
 }
 

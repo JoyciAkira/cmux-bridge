@@ -71,8 +71,7 @@ export type RelayStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 interface RPCRequest { id: string; method: string; params: unknown }
 interface RPCResponse { id: string; ok?: boolean; result?: unknown; error?: { code: string; message: string } }
 
-let _rpcSeq = 0;
-function newId(): string { return String(++_rpcSeq); }
+const RPC_TIMEOUT_MS = 10_000;
 
 // ── Relay client ──────────────────────────────────────────────────────────
 
@@ -89,6 +88,9 @@ class RelayClient extends TypedEmitter {
   private _retryTimer: ReturnType<typeof setTimeout> | null = null;
   private _intentionalClose = false;
   private _pending = new Map<string, (r: RPCResponse) => void>();
+  private _seq = 0;
+
+  private _newId(): string { return String(++this._seq); }
 
   get status(): RelayStatus { return this._status; }
 
@@ -122,7 +124,7 @@ class RelayClient extends TypedEmitter {
     return (res.surfaces ?? []).map((s) => ({ id: s.id, title: s.title, index: s.index }));
   }
 
-  async subscribe(workspaceId: string, surfaceId: string, lines = 50): Promise<void> {
+  async subscribe(workspaceId: string, surfaceId: string, lines = 200): Promise<void> {
     await this._rpc('surface.subscribe', { workspace_id: workspaceId, surface_id: surfaceId, lines });
   }
 
@@ -197,9 +199,14 @@ class RelayClient extends TypedEmitter {
   private _rpc(method: string, params: unknown): Promise<unknown> {
     return new Promise((resolve, reject) => {
       if (this.ws?.readyState !== WebSocket.OPEN) { reject(new Error('not connected')); return; }
-      const id = newId();
+      const id = this._newId();
       const req: RPCRequest = { id, method, params };
+      const timer = setTimeout(() => {
+        this._pending.delete(id);
+        reject(new Error(`rpc timeout: ${method}`));
+      }, RPC_TIMEOUT_MS);
       this._pending.set(id, (r) => {
+        clearTimeout(timer);
         if (r.error) reject(new Error(r.error.message));
         else resolve(r.result ?? {});
       });

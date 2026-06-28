@@ -27,6 +27,7 @@ export default function WorkspaceRow({ workspace, onPress }: Props) {
           {surfaceCount} surface{surfaceCount !== 1 ? 's' : ''}
         </Text>
       </View>
+      {workspace.agentActive && <View style={styles.agentDot} />}
       <Text style={styles.chevron}>›</Text>
     </TouchableOpacity>
   );
@@ -56,4 +57,11 @@ const styles = StyleSheet.create({
   name: { color: Colors.text, fontSize: FontSizes.md, fontWeight: '600' },
   meta: { color: Colors.textMuted, fontSize: FontSizes.sm },
   chevron: { color: Colors.textDim, fontSize: 20, fontWeight: '300' },
+  agentDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: Colors.accent,
+    marginRight: -4,
+  },
 });

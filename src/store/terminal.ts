@@ -17,6 +17,7 @@ interface TerminalState {
   setScreen: (key: string, rows: string[], cols: number, cursor: { x: number; y: number }) => void;
   applyDiff: (key: string, ops: Array<{ op: string; y?: number; x?: number; text?: string }>) => void;
   clearSurface: (key: string) => void;
+  clearAllSurfaces: () => void;
   setFontSize: (key: string, size: number) => void;
   getSurface: (key: string) => SurfaceState;
 }
@@ -95,6 +96,8 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       surfaces: { ...state.surfaces, [key]: defaultSurface() },
     }));
   },
+
+  clearAllSurfaces: () => set({ surfaces: {} }),
 
   setFontSize: (key, size) => {
     set((state) => {

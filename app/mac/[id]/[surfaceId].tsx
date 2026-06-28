@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { useMacsStore } from '../../../src/store/macs';
 import { useRelay } from '../../../src/hooks/useRelay';
@@ -53,10 +53,14 @@ export default function TerminalScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+    >
       <TerminalView surfaceKey={surfaceId} style={styles.terminal} />
       <InputBar onSend={handleSend} />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
