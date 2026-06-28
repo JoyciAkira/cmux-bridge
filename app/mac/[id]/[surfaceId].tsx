@@ -7,7 +7,6 @@ import TerminalView from '../../../src/components/terminal/TerminalView';
 import InputBar from '../../../src/components/terminal/InputBar';
 import { scheduleLocalNotification } from '../../../src/services/notifications';
 import { getRelayClient } from '../../../src/services/relay';
-import { Colors, FontSizes } from '../../../src/theme';
 
 export default function TerminalScreen() {
   const { id, surfaceId, workspaceId, title } = useLocalSearchParams<{
@@ -65,8 +64,8 @@ export default function TerminalScreen() {
 }
 
 function HeaderTitle({ title, status }: { title?: string; status: string }) {
-  const dot = status === 'connected' ? Colors.success : status === 'connecting' ? Colors.warning : Colors.textDim;
-  const label = title ? (title.length > 30 ? title.slice(0, 30) + '…' : title) : '…';
+  const dot = status === 'connected' ? '#4ade80' : status === 'connecting' ? '#fbbf24' : '#555';
+  const label = title ? (title.length > 32 ? title.slice(0, 32) + '…' : title) : '…';
   return (
     <View style={header.row}>
       <View style={[header.dot, { backgroundColor: dot }]} />
@@ -76,12 +75,12 @@ function HeaderTitle({ title, status }: { title?: string; status: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.terminalBg },
+  container: { flex: 1, backgroundColor: '#000' },
   terminal: { flex: 1 },
 });
 
 const header = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  dot: { width: 7, height: 7, borderRadius: 4 },
-  title: { color: Colors.text, fontSize: FontSizes.md, fontWeight: '600', fontFamily: 'monospace' },
+  dot: { width: 6, height: 6, borderRadius: 3 },
+  title: { color: '#d4d4d4', fontSize: 12, fontWeight: '500', fontFamily: 'monospace' },
 });

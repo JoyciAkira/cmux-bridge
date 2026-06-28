@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import { useTerminalStore } from '../../store/terminal';
 import { usePrefsStore } from '../../store/prefs';
-import { Colors } from '../../theme';
 
 // eslint-disable-next-line no-control-regex
 const ANSI_RE = /\x1B\[[0-9;]*[mGKHFJABCDr]|\x1B[=>]|\r/g;
@@ -17,12 +16,15 @@ const BOX_RE = /^[\s\u2500-\u257F\u2580-\u259F\u25A0-\u25FF]+$/u;
 
 function renderLine(raw: string): string {
   const s = raw.replace(ANSI_RE, '');
-  return BOX_RE.test(s) ? ' ' : s || ' ';
+  return BOX_RE.test(s) ? '' : s;
 }
 
 interface Props extends Omit<ScrollViewProps, 'children'> {
   surfaceKey: string;
 }
+
+const FONT_SIZE = 12;
+const LINE_HEIGHT = 18;
 
 const TerminalView = React.memo(({ surfaceKey, ...scrollProps }: Props) => {
   const lines = useTerminalStore((s) => s.surfaces[surfaceKey]?.lines) ?? [];
@@ -36,10 +38,9 @@ const TerminalView = React.memo(({ surfaceKey, ...scrollProps }: Props) => {
 
   useEffect(() => { setLocalFontSize(globalFontSize); }, [globalFontSize]);
 
-  // Debounced scroll-to-end: fires at most once per 300ms, never animated
   useEffect(() => {
     if (userScrolledUp.current) return;
-    if (scrollTimer.current) return; // already scheduled
+    if (scrollTimer.current) return;
     scrollTimer.current = setTimeout(() => {
       scrollTimer.current = null;
       if (!userScrolledUp.current) {
@@ -59,7 +60,6 @@ const TerminalView = React.memo(({ surfaceKey, ...scrollProps }: Props) => {
     userScrolledUp.current = contentSize.height - layoutMeasurement.height - contentOffset.y > 40;
   }, []);
 
-  // Pinch-to-zoom
   const pinchRef = useRef<{ dist: number; size: number } | null>(null);
 
   const handleTouchStart = useCallback((e: GestureResponderEvent) => {
@@ -87,15 +87,15 @@ const TerminalView = React.memo(({ surfaceKey, ...scrollProps }: Props) => {
     }
   }, [localFontSize, setFontSize]);
 
-  const lineHeight = Math.round(localFontSize * 1.5);
+  const fs = localFontSize ?? FONT_SIZE;
+  const lh = Math.round(fs * 1.5);
 
   return (
     <ScrollView
       ref={scrollRef}
       style={styles.container}
       contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={true}
-      indicatorStyle="white"
+      showsVerticalScrollIndicator={false}
       onScrollEndDrag={handleScrollEnd}
       onMomentumScrollEnd={handleScrollEnd}
       onTouchStart={handleTouchStart}
@@ -106,15 +106,18 @@ const TerminalView = React.memo(({ surfaceKey, ...scrollProps }: Props) => {
       removeClippedSubviews
       {...scrollProps}
     >
-      {lines.map((line) => (
-        <Text
-          key={line.id}
-          style={[styles.line, { fontSize: localFontSize, lineHeight, minHeight: lineHeight }]}
-          selectable
-        >
-          {renderLine(line.text)}
-        </Text>
-      ))}
+      {lines.map((line) => {
+        const text = renderLine(line.text);
+        return (
+          <Text
+            key={line.id}
+            style={[styles.line, { fontSize: fs, lineHeight: lh, minHeight: lh }]}
+            selectable
+          >
+            {text}
+          </Text>
+        );
+      })}
       <View style={styles.cursor} />
     </ScrollView>
   );
@@ -126,23 +129,23 @@ export default TerminalView;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.terminalBg,
+    backgroundColor: '#000',
   },
   content: {
-    paddingHorizontal: 10,
-    paddingTop: 8,
-    paddingBottom: 24,
+    paddingHorizontal: 8,
+    paddingTop: 6,
+    paddingBottom: 20,
   },
   line: {
     fontFamily: 'monospace',
-    color: Colors.terminalFg,
+    color: '#d4d4d4',
     letterSpacing: 0,
   },
   cursor: {
-    width: 8,
-    height: 14,
-    backgroundColor: Colors.terminalCursor,
-    marginTop: 4,
-    opacity: 0.8,
+    width: 7,
+    height: LINE_HEIGHT,
+    backgroundColor: '#4ade80',
+    marginTop: 2,
+    opacity: 0.9,
   },
 });

@@ -8,23 +8,22 @@ import {
   ScrollView,
   Platform,
 } from 'react-native';
-import { Colors, Spacing, FontSizes, Radii } from '../../theme';
+
+const MACROS: Array<{ label: string; value: string }> = [
+  { label: 'C-c', value: '\x03' },
+  { label: 'C-d', value: '\x04' },
+  { label: 'C-z', value: '\x1A' },
+  { label: 'esc', value: '\x1B' },
+  { label: 'tab', value: '\t' },
+  { label: '↑',   value: '\x1B[A' },
+  { label: '↓',   value: '\x1B[B' },
+  { label: '←',   value: '\x1B[D' },
+  { label: '→',   value: '\x1B[C' },
+];
 
 interface Props {
   onSend: (text: string) => void;
 }
-
-const MACROS: Array<{ label: string; value: string }> = [
-  { label: 'ctrl+c', value: '\x03' },
-  { label: 'ctrl+d', value: '\x04' },
-  { label: 'ctrl+z', value: '\x1A' },
-  { label: 'esc',    value: '\x1B' },
-  { label: 'tab',    value: '\t' },
-  { label: '↑',      value: '\x1B[A' },
-  { label: '↓',      value: '\x1B[B' },
-  { label: '←',      value: '\x1B[D' },
-  { label: '→',      value: '\x1B[C' },
-];
 
 export default function InputBar({ onSend }: Props) {
   const [text, setText] = useState('');
@@ -36,124 +35,125 @@ export default function InputBar({ onSend }: Props) {
   }, [text, onSend]);
 
   return (
-    <View style={styles.container}>
+    <View style={styles.root}>
+      {/* Macro strip */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.macroScroll}
+        style={styles.macroBar}
         contentContainerStyle={styles.macroContent}
         keyboardShouldPersistTaps="always"
       >
         {MACROS.map((m) => (
           <TouchableOpacity
             key={m.label}
-            style={styles.macroBtn}
+            style={styles.chip}
             onPress={() => onSend(m.value)}
             accessibilityLabel={m.label}
             accessibilityRole="button"
           >
-            <Text style={styles.macroLabel}>{m.label}</Text>
+            <Text style={styles.chipLabel}>{m.label}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
+      {/* Input row */}
       <View style={styles.inputRow}>
+        <Text style={styles.prompt}>$</Text>
         <TextInput
           style={styles.input}
           value={text}
           onChangeText={setText}
-          placeholder="command…"
-          placeholderTextColor={Colors.textDim}
+          placeholder="command"
+          placeholderTextColor="#444"
           autoCapitalize="none"
           autoCorrect={false}
           spellCheck={false}
           returnKeyType="send"
           onSubmitEditing={handleSend}
-          selectionColor={Colors.accent}
+          selectionColor="#4ade80"
           multiline={false}
         />
         <TouchableOpacity
-          style={[styles.sendBtn, !text.trim() && styles.sendBtnDisabled]}
+          style={[styles.sendBtn, !text.trim() && styles.sendBtnOff]}
           onPress={handleSend}
           disabled={!text.trim()}
-          accessibilityLabel="Send command"
+          accessibilityLabel="Send"
           accessibilityRole="button"
         >
-          <Text style={styles.sendLabel}>↵</Text>
+          <Text style={styles.sendIcon}>↵</Text>
         </TouchableOpacity>
       </View>
-      {Platform.OS === 'ios' && <View style={styles.homeIndicator} />}
+
+      {Platform.OS === 'ios' && <View style={styles.homeBar} />}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: Colors.surface,
+  root: {
+    backgroundColor: '#0d0d0d',
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
+    borderTopColor: '#1e1e1e',
   },
-  macroScroll: {
+  macroBar: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
+    borderBottomColor: '#1a1a1a',
   },
   macroContent: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-    gap: 6,
-    alignItems: 'center',
-  },
-  macroBtn: {
-    backgroundColor: Colors.surfaceHigh,
-    borderRadius: Radii.sm,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 5,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Colors.border,
-    minWidth: 44,
+    gap: 4,
     alignItems: 'center',
   },
-  macroLabel: {
-    color: Colors.textMuted,
-    fontSize: FontSizes.sm,
+  chip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 4,
+    backgroundColor: '#1a1a1a',
+  },
+  chipLabel: {
+    color: '#888',
+    fontSize: 11,
     fontFamily: 'monospace',
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.sm,
-    gap: Spacing.sm,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  prompt: {
+    color: '#4ade80',
+    fontSize: 14,
+    fontFamily: 'monospace',
+    fontWeight: '700',
   },
   input: {
     flex: 1,
-    backgroundColor: Colors.surfaceHigh,
-    borderRadius: Radii.sm,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Colors.border,
-    color: Colors.text,
-    fontSize: FontSizes.md,
+    color: '#e0e0e0',
+    fontSize: 13,
     fontFamily: 'monospace',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 9,
-    minHeight: 38,
+    paddingVertical: 0,
+    includeFontPadding: false,
   },
   sendBtn: {
-    backgroundColor: Colors.accent,
-    borderRadius: Radii.sm,
-    width: 38,
-    height: 38,
+    width: 28,
+    height: 28,
+    borderRadius: 5,
+    backgroundColor: '#166534',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sendBtnDisabled: {
-    backgroundColor: Colors.accentDim,
-    opacity: 0.4,
+  sendBtnOff: {
+    backgroundColor: '#1a1a1a',
+    opacity: 0.5,
   },
-  sendLabel: {
-    color: Colors.background,
-    fontSize: FontSizes.lg,
+  sendIcon: {
+    color: '#4ade80',
+    fontSize: 14,
     fontWeight: '700',
   },
-  homeIndicator: { height: 8 },
+  homeBar: { height: 8 },
 });
