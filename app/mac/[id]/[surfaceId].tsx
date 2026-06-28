@@ -10,10 +10,11 @@ import { getRelayClient } from '../../../src/services/relay';
 import { Colors, FontSizes } from '../../../src/theme';
 
 export default function TerminalScreen() {
-  const { id, surfaceId, workspaceId } = useLocalSearchParams<{
+  const { id, surfaceId, workspaceId, title } = useLocalSearchParams<{
     id: string;
     surfaceId: string;
     workspaceId: string;
+    title?: string;
   }>();
 
   const mac = useMacsStore((s) => s.macs.find((m) => m.id === id));
@@ -43,8 +44,8 @@ export default function TerminalScreen() {
   }, [id]);
 
   useEffect(() => {
-    navigation.setOptions({ headerTitle: () => <HeaderTitle surfaceId={surfaceId} status={status} /> });
-  }, [surfaceId, status, navigation]);
+    navigation.setOptions({ headerTitle: () => <HeaderTitle title={title} status={status} /> });
+  }, [title, status, navigation]);
 
   const handleSend = useCallback(
     (text: string) => sendInput(surfaceId, text),
@@ -59,12 +60,13 @@ export default function TerminalScreen() {
   );
 }
 
-function HeaderTitle({ surfaceId, status }: { surfaceId: string; status: string }) {
+function HeaderTitle({ title, status }: { title?: string; status: string }) {
   const dot = status === 'connected' ? Colors.success : status === 'connecting' ? Colors.warning : Colors.textDim;
+  const label = title ? (title.length > 30 ? title.slice(0, 30) + '…' : title) : '…';
   return (
     <View style={header.row}>
       <View style={[header.dot, { backgroundColor: dot }]} />
-      <Text style={header.title} numberOfLines={1}>{surfaceId?.slice(0, 8) ?? '…'}</Text>
+      <Text style={header.title} numberOfLines={1}>{label}</Text>
     </View>
   );
 }

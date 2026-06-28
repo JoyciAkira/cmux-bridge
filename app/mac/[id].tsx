@@ -30,8 +30,9 @@ export default function WorkspacesScreen() {
   }, [mac, navigation]);
 
   const handleSurfacePress = useCallback(
-    (workspaceId: string, surfaceId: string) => {
-      router.push(`/mac/${id}/${surfaceId}?workspaceId=${workspaceId}`);
+    (workspaceId: string, surfaceId: string, title?: string) => {
+      const t = title ? `&title=${encodeURIComponent(title)}` : '';
+      router.push(`/mac/${id}/${surfaceId}?workspaceId=${workspaceId}${t}`);
     },
     [id],
   );
@@ -68,7 +69,7 @@ export default function WorkspacesScreen() {
               workspace={item}
               onPress={() => {
                 if (item.surfaces.length === 1) {
-                  handleSurfacePress(item.id, item.surfaces[0].id);
+                  handleSurfacePress(item.id, item.surfaces[0].id, item.surfaces[0].title);
                 }
               }}
             />
@@ -78,7 +79,7 @@ export default function WorkspacesScreen() {
                   <TouchableOpacity
                     key={s.id}
                     style={styles.surfaceBtn}
-                    onPress={() => handleSurfacePress(item.id, s.id)}
+                    onPress={() => handleSurfacePress(item.id, s.id, s.title)}
                     accessibilityRole="button"
                     accessibilityLabel={`Open surface ${s.title}`}
                   >
