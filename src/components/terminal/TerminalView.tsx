@@ -13,19 +13,11 @@ import { Colors } from '../../theme';
 
 // eslint-disable-next-line no-control-regex
 const ANSI_RE = /\x1B\[[0-9;]*[mGKHFJABCDr]|\x1B[=>]|\r/g;
-// Box-drawing and block-element Unicode ranges that render as thin lines
-const BOX_RE = /^[\s\u2500-\u257F\u2580-\u259F\u25A0-\u25FF\u2800-\u28FF─━═─┄┅┆┇┈┉┊┋┌┐└┘├┤┬┴┼╌╍╎╏╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬▀▄█▌▐░▒▓]+$/u;
-
-function stripAnsi(str: string): string {
-  return str.replace(ANSI_RE, '');
-}
+const BOX_RE = /^[\s\u2500-\u257F\u2580-\u259F\u25A0-\u25FF]+$/u;
 
 function renderLine(raw: string): string {
-  const stripped = stripAnsi(raw);
-  // Replace lines that are purely box-drawing/separators with a space
-  // so they render at full line-height instead of collapsing to a thin bar
-  if (BOX_RE.test(stripped)) return ' ';
-  return stripped || ' ';
+  const s = raw.replace(ANSI_RE, '');
+  return BOX_RE.test(s) ? ' ' : s || ' ';
 }
 
 interface Props extends Omit<ScrollViewProps, 'children'> {
@@ -34,27 +26,37 @@ interface Props extends Omit<ScrollViewProps, 'children'> {
 
 const TerminalView = React.memo(({ surfaceKey, ...scrollProps }: Props) => {
   const lines = useTerminalStore((s) => s.surfaces[surfaceKey]?.lines) ?? [];
-  const reduceMotion = usePrefsStore((s) => s.reduceMotion);
   const globalFontSize = usePrefsStore((s) => s.terminalFontSize);
   const setFontSize = usePrefsStore((s) => s.setFontSize);
 
   const [localFontSize, setLocalFontSize] = useState(globalFontSize);
   const scrollRef = useRef<ScrollView>(null);
   const userScrolledUp = useRef(false);
+  const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { setLocalFontSize(globalFontSize); }, [globalFontSize]);
 
-  // Scroll to end on any content change, unless user has scrolled up
+  // Debounced scroll-to-end: fires at most once per 300ms, never animated
   useEffect(() => {
-    if (!userScrolledUp.current) {
-      scrollRef.current?.scrollToEnd({ animated: !reduceMotion });
-    }
+    if (userScrolledUp.current) return;
+    if (scrollTimer.current) return; // already scheduled
+    scrollTimer.current = setTimeout(() => {
+      scrollTimer.current = null;
+      if (!userScrolledUp.current) {
+        scrollRef.current?.scrollToEnd({ animated: false });
+      }
+    }, 300);
   });
 
-  const handleScrollEnd = useCallback((e: { nativeEvent: { contentOffset: { y: number }; contentSize: { height: number }; layoutMeasurement: { height: number } } }) => {
+  const handleScrollEnd = useCallback((e: {
+    nativeEvent: {
+      contentOffset: { y: number };
+      contentSize: { height: number };
+      layoutMeasurement: { height: number };
+    };
+  }) => {
     const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
-    const distFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
-    userScrolledUp.current = distFromBottom > 40;
+    userScrolledUp.current = contentSize.height - layoutMeasurement.height - contentOffset.y > 40;
   }, []);
 
   // Pinch-to-zoom
@@ -75,8 +77,7 @@ const TerminalView = React.memo(({ surfaceKey, ...scrollProps }: Props) => {
     const dy = touches[0].pageY - touches[1].pageY;
     const dist = Math.sqrt(dx * dx + dy * dy);
     const scale = dist / pinchRef.current.dist;
-    const next = Math.min(24, Math.max(9, Math.round(pinchRef.current.size * scale)));
-    setLocalFontSize(next);
+    setLocalFontSize(Math.min(24, Math.max(9, Math.round(pinchRef.current.size * scale))));
   }, []);
 
   const handleTouchEnd = useCallback(() => {
@@ -102,6 +103,7 @@ const TerminalView = React.memo(({ surfaceKey, ...scrollProps }: Props) => {
       onTouchEnd={handleTouchEnd}
       accessibilityLabel="Terminal output"
       accessibilityRole="text"
+      removeClippedSubviews
       {...scrollProps}
     >
       {lines.map((line) => (
@@ -127,10 +129,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.terminalBg,
   },
   content: {
-    padding: 10,
-    paddingBottom: 32,
-    flexGrow: 1,
-    justifyContent: 'flex-end',
+    paddingHorizontal: 10,
+    paddingTop: 8,
+    paddingBottom: 24,
   },
   line: {
     fontFamily: 'monospace',
@@ -141,7 +142,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 14,
     backgroundColor: Colors.terminalCursor,
-    marginTop: 2,
+    marginTop: 4,
     opacity: 0.8,
   },
 });

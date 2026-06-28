@@ -45,15 +45,20 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
       const prev = state.surfaces[key] ?? defaultSurface();
       const lines = [...prev.lines];
       let nextId = prev.nextId;
+      let changed = false;
       for (const op of ops) {
         if (op.op === 'clear') {
-          lines.length = 0;
-          nextId = 0;
+          if (lines.length > 0) { lines.length = 0; nextId = 0; changed = true; }
         } else if (op.op === 'row' && op.y !== undefined) {
-          while (lines.length <= op.y) lines.push({ id: nextId++, text: '' });
-          lines[op.y] = { id: lines[op.y].id, text: op.text ?? '' };
+          while (lines.length <= op.y) { lines.push({ id: nextId++, text: '' }); changed = true; }
+          const newText = op.text ?? '';
+          if (lines[op.y].text !== newText) {
+            lines[op.y] = { id: lines[op.y].id, text: newText };
+            changed = true;
+          }
         }
       }
+      if (!changed) return state;
       return { surfaces: { ...state.surfaces, [key]: { ...prev, lines: [...lines], nextId } } };
     });
   },
