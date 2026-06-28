@@ -13,8 +13,19 @@ import { Colors } from '../../theme';
 
 // eslint-disable-next-line no-control-regex
 const ANSI_RE = /\x1B\[[0-9;]*[mGKHFJABCDr]|\x1B[=>]|\r/g;
+// Box-drawing and block-element Unicode ranges that render as thin lines
+const BOX_RE = /^[\s\u2500-\u257F\u2580-\u259F\u25A0-\u25FF\u2800-\u28FF─━═─┄┅┆┇┈┉┊┋┌┐└┘├┤┬┴┼╌╍╎╏╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬▀▄█▌▐░▒▓]+$/u;
+
 function stripAnsi(str: string): string {
   return str.replace(ANSI_RE, '');
+}
+
+function renderLine(raw: string): string {
+  const stripped = stripAnsi(raw);
+  // Replace lines that are purely box-drawing/separators with a space
+  // so they render at full line-height instead of collapsing to a thin bar
+  if (BOX_RE.test(stripped)) return ' ';
+  return stripped || ' ';
 }
 
 interface Props extends Omit<ScrollViewProps, 'children'> {
@@ -99,7 +110,7 @@ const TerminalView = React.memo(({ surfaceKey, ...scrollProps }: Props) => {
           style={[styles.line, { fontSize: localFontSize, lineHeight }]}
           selectable
         >
-          {stripAnsi(line.text) || ' '}
+          {renderLine(line.text)}
         </Text>
       ))}
       <View style={styles.cursor} />
