@@ -109,7 +109,7 @@ const TerminalView = React.memo(({ surfaceKey, ...scrollProps }: Props) => {
       {lines.map((line) => (
         <Text
           key={line.id}
-          style={[styles.line, { fontSize: localFontSize, lineHeight }]}
+          style={[styles.line, { fontSize: localFontSize, lineHeight, minHeight: lineHeight }]}
           selectable
         >
           {renderLine(line.text)}
