@@ -63,6 +63,7 @@
         "projectId": "396ebbe8-cb19-4b17-aa90-42d50f0b0112"
       }
     },
+    "hostUri": "100.123.45.24:8082",
     "owner": "dankork1"
   }
 }
