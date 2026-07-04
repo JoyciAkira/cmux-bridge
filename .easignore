@@ -1,0 +1,8 @@
+.xcode-build/
+.omc/
+android/
+ios/
+node_modules/
+.expo/
+*.log
+.DS_Store
