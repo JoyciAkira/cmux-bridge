@@ -35,8 +35,24 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
   setScreen: (key, rows, _cols, _cursor) => {
     set((state) => {
       const prev = state.surfaces[key] ?? defaultSurface();
-      const lines = rows.map((text, i) => ({ id: i, text }));
-      return { surfaces: { ...state.surfaces, [key]: { ...prev, lines, nextId: rows.length } } };
+      const prevLines = prev.lines;
+      let nextId = prev.nextId;
+      const lines: TerminalLine[] = [];
+      let changed = rows.length !== prevLines.length;
+
+      for (let y = 0; y < rows.length; y++) {
+        const text = rows[y];
+        const existing = prevLines[y];
+        if (existing && existing.text === text) {
+          lines.push(existing);
+        } else {
+          changed = true;
+          lines.push({ id: existing?.id ?? nextId++, text });
+        }
+      }
+
+      if (!changed) return state;
+      return { surfaces: { ...state.surfaces, [key]: { ...prev, lines, nextId } } };
     });
   },
 
