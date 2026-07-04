@@ -69,7 +69,12 @@ export type RelayStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 // ── RPC helpers ───────────────────────────────────────────────────────────
 
 interface RPCRequest { id: string; method: string; params: unknown }
-interface RPCResponse { id: string; ok?: boolean; result?: unknown; error?: { code: string; message: string } }
+interface RPCResponse {
+  id: string | number;
+  ok?: boolean;
+  result?: unknown;
+  error?: { code: string; message: string };
+}
 
 const RPC_TIMEOUT_MS = 10_000;
 
@@ -82,6 +87,7 @@ class RelayClient extends TypedEmitter {
   private _status: RelayStatus = 'disconnected';
   private _host = '';
   private _port = 4399;
+  private _socketPassword = '';
   private _token: string | null = null;
   private _deviceId: string | null = null;
   private _retryCount = 0;
@@ -94,19 +100,30 @@ class RelayClient extends TypedEmitter {
 
   get status(): RelayStatus { return this._status; }
 
-  connect(host: string, port = 4399): void {
+  connect(host: string, port = 4399, socketPassword = ''): void {
+    if (
+      this._host === host
+      && this._port === port
+      && this._socketPassword === socketPassword
+      && this.ws?.readyState === WebSocket.OPEN
+      && this._status === 'connected'
+    ) {
+      return;
+    }
+
     this._host = host;
     this._port = port;
+    this._socketPassword = socketPassword;
     this._intentionalClose = false;
     this._retryCount = 0;
-    this._registerAndConnect();
+    this._closeSocket();
+    void this._registerAndConnect();
   }
 
   disconnect(): void {
     this._intentionalClose = true;
     if (this._retryTimer) { clearTimeout(this._retryTimer); this._retryTimer = null; }
-    this.ws?.close();
-    this.ws = null;
+    this._closeSocket();
     this._setStatus('disconnected');
   }
 
@@ -152,6 +169,24 @@ class RelayClient extends TypedEmitter {
     }
   }
 
+  private _closeSocket(): void {
+    if (!this.ws) return;
+    this.ws.onopen = null;
+    this.ws.onmessage = null;
+    this.ws.onerror = null;
+    this.ws.onclose = null;
+    this.ws.close();
+    this.ws = null;
+    for (const [id, resolve] of this._pending) {
+      resolve({ id, ok: false, error: { code: 'disconnected', message: 'socket closed' } });
+    }
+    this._pending.clear();
+  }
+
+  private async _authenticate(): Promise<void> {
+    await this._rpc('auth.login', { password: this._socketPassword });
+  }
+
   private _openSocket(): void {
     this._setStatus('connecting');
     const url = `ws://${this._host}:${this._port}/v1/ws`;
@@ -161,18 +196,27 @@ class RelayClient extends TypedEmitter {
     ws.onopen = () => {
       const hello = { deviceId: this._deviceId, appVersion: '1.0.0', protocolVersion: 1 };
       ws.send(JSON.stringify(hello));
-      this._retryCount = 0;
-      this._setStatus('connected');
-      this.emit('connected');
+      void this._authenticate()
+        .then(() => {
+          this._retryCount = 0;
+          this._setStatus('connected');
+          this.emit('connected');
+        })
+        .catch((e: unknown) => {
+          this._setStatus('error');
+          this.emit('error', String(e));
+          ws.close();
+        });
     };
 
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data as string) as Record<string, unknown>;
         // RPC response has an `id` field
-        if (typeof msg.id === 'string' && this._pending.has(msg.id)) {
-          const resolve = this._pending.get(msg.id)!;
-          this._pending.delete(msg.id);
+        const rpcId = msg.id;
+        if ((typeof rpcId === 'string' || typeof rpcId === 'number') && this._pending.has(String(rpcId))) {
+          const resolve = this._pending.get(String(rpcId))!;
+          this._pending.delete(String(rpcId));
           resolve(msg as unknown as RPCResponse);
           return;
         }
@@ -207,8 +251,11 @@ class RelayClient extends TypedEmitter {
       }, RPC_TIMEOUT_MS);
       this._pending.set(id, (r) => {
         clearTimeout(timer);
-        if (r.error) reject(new Error(r.error.message));
-        else resolve(r.result ?? {});
+        if (r.ok === false || r.error) {
+          reject(new Error(r.error?.message ?? 'rpc failed'));
+          return;
+        }
+        resolve(r.result ?? {});
       });
       this.ws.send(JSON.stringify(req));
     });

@@ -28,12 +28,18 @@ export function useRelay(macId: string, host: string, port = 4399) {
       const ws = await client.listWorkspaces();
       const withSurfaces = await Promise.all(
         ws.map(async (w) => {
-          const surfaces = await client.listSurfaces(w.id);
-          return { ...w, surfaces, agentActive: false };
+          try {
+            const surfaces = await client.listSurfaces(w.id);
+            return { ...w, surfaces, agentActive: false };
+          } catch {
+            return { ...w, surfaces: [], agentActive: false };
+          }
         }),
       );
       setWorkspaces(withSurfaces);
-    } catch { /* retry on reconnect */ }
+    } catch {
+      setWorkspaces([]);
+    }
   }, []);
 
   useEffect(() => {

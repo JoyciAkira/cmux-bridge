@@ -38,11 +38,12 @@ In `~/.config/cmux/cmux.json`:
 ```json
 {
   "automation": {
-    "socketControlMode": "password",
-    "socketPassword": "<your-password>"
+    "socketControlMode": "allowAll"
   }
 }
 ```
+
+Restart cmux after changing this file.
 
 ---
 
