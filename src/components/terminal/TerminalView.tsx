@@ -1,12 +1,10 @@
-import React, { useEffect, useRef, useCallback, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import {
-  FlatList,
+  ScrollView,
   Text,
   StyleSheet,
-  View,
   GestureResponderEvent,
   Platform,
-  type ListRenderItemInfo,
 } from 'react-native';
 import { useTerminalStore, type TerminalLine } from '../../store/terminal';
 import { usePrefsStore } from '../../store/prefs';
@@ -24,6 +22,7 @@ const MONO_FONT = Platform.select({
   android: 'monospace',
   default: 'monospace',
 });
+const EMPTY_LINES: TerminalLine[] = [];
 
 interface LineRowProps {
   line: TerminalLine;
@@ -53,32 +52,40 @@ const TerminalLineRow = React.memo(function TerminalLineRow({
 ));
 
 const TerminalView = React.memo(function TerminalView({ surfaceKey }: Props) {
-  const lines = useTerminalStore((s) => s.surfaces[surfaceKey]?.lines) ?? [];
+  const lines = useTerminalStore((s) => s.surfaces[surfaceKey]?.lines) ?? EMPTY_LINES;
   const globalFontSize = usePrefsStore((s) => s.terminalFontSize);
+  const reduceMotion = usePrefsStore((s) => s.reduceMotion);
   const setFontSize = usePrefsStore((s) => s.setFontSize);
 
   const [localFontSize, setLocalFontSize] = useState(globalFontSize);
-  const listRef = useRef<FlatList<TerminalLine>>(null);
+  const scrollRef = useRef<ScrollView>(null);
   const userScrolledUp = useRef(false);
+  const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { setLocalFontSize(globalFontSize); }, [globalFontSize]);
 
   const fontSize = localFontSize ?? DEFAULT_FONT_SIZE;
   const lineHeight = Math.round(fontSize * LINE_HEIGHT_RATIO);
 
-  const tailSignature = useMemo(() => {
-    if (lines.length === 0) return '0';
-    const last = lines[lines.length - 1];
-    return `${lines.length}:${last.id}:${last.text.length}`;
-  }, [lines]);
+  const lineCount = lines.length;
+  const lastLineTextLen = lines[lineCount - 1]?.text.length ?? 0;
 
   useEffect(() => {
-    if (userScrolledUp.current) return;
-    const timer = setTimeout(() => {
-      listRef.current?.scrollToEnd({ animated: false });
-    }, 120);
-    return () => clearTimeout(timer);
-  }, [tailSignature, lineHeight]);
+    if (userScrolledUp.current || reduceMotion) return;
+    if (scrollTimer.current) clearTimeout(scrollTimer.current);
+    scrollTimer.current = setTimeout(() => {
+      scrollTimer.current = null;
+      if (!userScrolledUp.current) {
+        scrollRef.current?.scrollToEnd({ animated: false });
+      }
+    }, 300);
+    return () => {
+      if (scrollTimer.current) {
+        clearTimeout(scrollTimer.current);
+        scrollTimer.current = null;
+      }
+    };
+  }, [lineCount, lastLineTextLen, lineHeight, reduceMotion]);
 
   const handleScrollEnd = useCallback((e: {
     nativeEvent: {
@@ -118,45 +125,30 @@ const TerminalView = React.memo(function TerminalView({ surfaceKey }: Props) {
     }
   }, [localFontSize, setFontSize]);
 
-  const renderItem = useCallback(({ item }: ListRenderItemInfo<TerminalLine>) => (
-    <TerminalLineRow line={item} fontSize={fontSize} lineHeight={lineHeight} />
-  ), [fontSize, lineHeight]);
-
-  const keyExtractor = useCallback((item: TerminalLine) => String(item.id), []);
-
-  const getItemLayout = useCallback((_: ArrayLike<TerminalLine> | null | undefined, index: number) => ({
-    length: lineHeight,
-    offset: lineHeight * index,
-    index,
-  }), [lineHeight]);
-
   return (
-    <View
+    <ScrollView
+      ref={scrollRef}
       style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+      onScrollEndDrag={handleScrollEnd}
+      onMomentumScrollEnd={handleScrollEnd}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      accessibilityLabel="Terminal output"
+      accessibilityRole="text"
+      keyboardShouldPersistTaps="handled"
     >
-      <FlatList
-        ref={listRef}
-        data={lines}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        getItemLayout={getItemLayout}
-        style={styles.list}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        onScrollEndDrag={handleScrollEnd}
-        onMomentumScrollEnd={handleScrollEnd}
-        accessibilityLabel="Terminal output"
-        accessibilityRole="text"
-        removeClippedSubviews
-        initialNumToRender={40}
-        maxToRenderPerBatch={24}
-        windowSize={12}
-        updateCellsBatchingPeriod={50}
-      />
-    </View>
+      {lines.map((line) => (
+        <TerminalLineRow
+          key={line.id}
+          line={line}
+          fontSize={fontSize}
+          lineHeight={lineHeight}
+        />
+      ))}
+    </ScrollView>
   );
 });
 
@@ -166,9 +158,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.terminalBg,
-  },
-  list: {
-    flex: 1,
   },
   content: {
     paddingHorizontal: Spacing.sm + 2,

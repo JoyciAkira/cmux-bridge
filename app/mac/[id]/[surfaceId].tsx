@@ -12,12 +12,17 @@ import { getRelayClient, type RelayStatus } from '../../../src/services/relay';
 import { Colors, Spacing, FontSizes, Radii } from '../../../src/theme';
 
 export default function TerminalScreen() {
-  const { id, surfaceId, workspaceId, title } = useLocalSearchParams<{
+  const params = useLocalSearchParams<{
     id: string;
     surfaceId: string;
     workspaceId: string;
     title?: string;
   }>();
+
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  const surfaceId = Array.isArray(params.surfaceId) ? params.surfaceId[0] : params.surfaceId;
+  const workspaceId = Array.isArray(params.workspaceId) ? params.workspaceId[0] : params.workspaceId;
+  const title = Array.isArray(params.title) ? params.title[0] : params.title;
 
   const mac = useMacsStore((s) => s.macs.find((m) => m.id === id));
   const lineCount = useTerminalStore((s) => s.surfaces[surfaceId ?? '']?.lines.length ?? 0);

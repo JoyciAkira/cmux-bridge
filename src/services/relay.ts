@@ -184,7 +184,11 @@ class RelayClient extends TypedEmitter {
   }
 
   private async _authenticate(): Promise<void> {
-    await this._rpc('auth.login', { password: this._socketPassword });
+    try {
+      await this._rpc('auth.login', { password: this._socketPassword });
+    } catch {
+      // allowAll / automation mode may not require auth; proceed to RPC calls.
+    }
   }
 
   private _openSocket(): void {

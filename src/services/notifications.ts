@@ -3,9 +3,6 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { AgentEvent } from './relay';
 
-// #region agent log
-fetch('http://127.0.0.1:7906/ingest/a0caf8cc-7ce6-41cd-831e-76d0b1f2904e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'8eb336'},body:JSON.stringify({sessionId:'8eb336',location:'notifications.ts:module-init',message:'setNotificationHandler called',data:{},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
-// #endregion
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -19,26 +16,31 @@ Notifications.setNotificationHandler({
 export async function registerForPushNotifications(): Promise<string | null> {
   if (!Device.isDevice) return null;
 
-  const { status: existing } = await Notifications.getPermissionsAsync();
-  let finalStatus = existing;
+  try {
+    const { status: existing } = await Notifications.getPermissionsAsync();
+    let finalStatus = existing;
 
-  if (existing !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
+    if (existing !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== 'granted') return null;
+
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('agent-events', {
+        name: 'Agent Events',
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 250, 250, 250],
+      });
+    }
+
+    const token = await Notifications.getExpoPushTokenAsync();
+    return token.data;
+  } catch {
+    // Dev builds without APNs entitlement (no paid Apple Developer account).
+    return null;
   }
-
-  if (finalStatus !== 'granted') return null;
-
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('agent-events', {
-      name: 'Agent Events',
-      importance: Notifications.AndroidImportance.HIGH,
-      vibrationPattern: [0, 250, 250, 250],
-    });
-  }
-
-  const token = await Notifications.getExpoPushTokenAsync();
-  return token.data;
 }
 
 const EVENT_LABELS: Record<AgentEvent, { title: string; body: string }> = {
