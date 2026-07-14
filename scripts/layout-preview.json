@@ -1,0 +1,87 @@
+{
+  "layout": {
+    "primaryColumns": 98,
+    "totalColumns": 143,
+    "renderFontSize": 12,
+    "cellAdvance": 7,
+    "lineHeight": 14,
+    "displayColumns": 50,
+    "primaryWidth": 702,
+    "fullContentWidth": 1017,
+    "chatOverflows": true,
+    "hasSidebar": true
+  },
+  "metrics": {
+    "renderFontSize": 12,
+    "cellAdvance": 7,
+    "lineHeight": 14,
+    "displayColumns": 50
+  },
+  "rows": [
+    {
+      "i": 0,
+      "plain": "       production worktree. Integrate minimal H3 executable observer path from main after",
+      "runs": [
+        {
+          "text": "       production worktree. Integrate minimal H3 executable observer path from main after",
+          "start": 0,
+          "cols": 89
+        }
+      ]
+    },
+    {
+      "i": 1,
+      "plain": "       worktree creation if missing. Do not start from main because it lacks ACHL scoped          * playwright Connected",
+      "runs": [
+        {
+          "text": "       worktree creation if missing. Do not start from main because it lacks ACHL scoped          * playwright Connected",
+          "start": 0,
+          "cols": 120
+        }
+      ]
+    },
+    {
+      "i": 2,
+      "plain": "       contracts.                                                                                 * websearch Connected",
+      "runs": [
+        {
+          "text": "       contracts.                                                                                 * websearch Connected",
+          "start": 0,
+          "cols": 119
+        }
+      ]
+    },
+    {
+      "i": 3,
+      "plain": "  55 + ## Next Steps                                                                              LSP",
+      "runs": [
+        {
+          "text": "  55 + ## Next Steps                                                                              LSP",
+          "start": 0,
+          "cols": 101
+        }
+      ]
+    },
+    {
+      "i": 4,
+      "plain": "   ⬝⬝⬝⬝⬝⬝⬝⬝  esc interrupt                                   80.5K (40%) · $200.28  ctrl+p commands    * OpenCode 1.17.20",
+      "runs": [
+        {
+          "text": "   ⬝⬝⬝⬝⬝⬝⬝⬝  esc interrupt                                   80.5K (40%) · ",
+          "start": 0,
+          "cols": 75
+        },
+        {
+          "text": "$200.28",
+          "start": 75,
+          "cols": 7
+        },
+        {
+          "text": "  ctrl+p commands    * OpenCode 1.17.20",
+          "start": 82,
+          "cols": 39
+        }
+      ]
+    }
+  ]
+}

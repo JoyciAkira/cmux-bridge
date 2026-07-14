@@ -82,7 +82,7 @@ Cmux Bridge lets developers control their macOS `cmux` terminal sessions from an
 - CJK double-width + emoji text-presentation via `terminalCellWidth` / `terminalGlyphs`
 - Cursor blink overlay isolato (`TerminalCursorOverlay`) — non invalida il canvas Skia/fallback
 - **Performance (v1):** cache `TerminalRenderCache` per righe ANSI invariate; viewport culling; diff batch su `requestAnimationFrame`
-- **Layout (deterministico):** `inferPrimaryColumns` trova il confine chat|chrome (gutter spazi / `┃`); quel valore è solo **clip**, mai target del font. `fitTerminalMetrics` usa il font preferito (min 9px, soft-fit disabilitato in TerminalView). Se la chat è più larga del telefono → pan orizzontale; sidebar MCP solo con tap **context ›**. **TUI mode** (OpenCode/NEXUS): pan verticale → `up`/`down`/`pgup`/`pgdn` remoti
+- **Layout (deterministico):** `trimOpenCodePanePrefix` + `inferPrimaryColumns` sulle righe **trimmed** (stesso spazio di `buildRenderRow`) → confine chat|chrome ~col 98–103. `primaryColumns` è **solo clip colonne**, mai target del font. `fitTerminalMetrics` soft-fit ~48 colonne telefono (font min 9px). Chat più larga del telefono → `chatOverflows` + pan orizzontale; sidebar MCP solo con tap **context ›** o scroll oltre il confine. Harness visivo: `scripts/opencode-layout-preview.html`. **TUI mode**: pan verticale → tasti remoti
 - **Glifi:** icone Claude/OpenCode (✻✶⏺⚙…) → ASCII; block drawing intatti
 - **Colori:** heuristic ANSI finché cmux non espone escape (issue #4273)
 - **Copy/selection:** modalità selezione (pulsante ⎘) con drag per range, copia selezione/riga/tutto via `expo-clipboard`

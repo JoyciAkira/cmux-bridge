@@ -4,16 +4,18 @@ import type { FittedTerminalMetrics } from './terminalLayout';
 import { inferPrimaryColumns } from './inferPrimaryColumns';
 
 export interface TerminalViewportLayout extends FittedTerminalMetrics {
-  /** Chat pane width in columns (clip boundary from gutter / ┃). */
+  /** Chat pane width in columns (clip boundary from gutter / ┃, render coords). */
   primaryColumns: number;
   /** Full row width including optional right sidebar (context, MCP, …). */
   totalColumns: number;
   /** Pixel width of the chat pane content (may exceed windowWidth → H-scroll). */
   primaryWidth: number;
-  /** Full canvas width — scroll right past primary to reveal sidebar. */
+  /** Full canvas width — scroll right past primaryColumns to reveal sidebar. */
   fullContentWidth: number;
-  /** Pixel clip at chat|sidebar boundary (not at window edge). */
-  clipWidth: number;
+  /** Pixel clip at the phone viewport edge (undefined when chat H-scrolls). */
+  clipWidth: number | undefined;
+  /** Chat pane is wider than the phone — pan horizontally within chat. */
+  chatOverflows: boolean;
   hasSidebar: boolean;
 }
 
@@ -40,17 +42,16 @@ export function maxColumnsPastPrimary(
 
 /**
  * Deterministic viewport:
- * 1. Infer chat|chrome boundary (`primaryColumns`) from plain screen rows.
- * 2. Keep font metrics as-is (caller must NOT have fitted font to primaryColumns).
- * 3. Chat pixel width = primaryColumns × advance (H-scroll if wider than phone).
- * 4. Sidebar sits past primaryColumns; revealed only when canvas scrolls there.
+ * 1. `plainRows` must be trim-aligned with `buildRenderRow` (pane prefix removed).
+ * 2. `primaryColumns` = inferred chat|chrome boundary — column clip only.
+ * 3. Font metrics come from `fitTerminalMetrics` (phone budget, not primaryColumns).
+ * 4. Chat wider than phone → `chatOverflows` + horizontal pan within chat.
  */
 export function computeTerminalViewport(opts: {
   windowWidth: number;
   cols: number;
   renderRows: TerminalRenderRow[];
   plainRows?: string[];
-  /** Sticky inferred primary (avoids gutter flicker between frames). */
   stickyPrimaryColumns?: number;
   cursorX: number;
   metrics: FittedTerminalMetrics;
@@ -62,9 +63,6 @@ export function computeTerminalViewport(opts: {
 
   const { renderFontSize, cellAdvance, lineHeight, displayColumns } = opts.metrics;
 
-  // primaryColumns = clip boundary only. Never min() with displayColumns —
-  // that truncates chat. Font fit is the caller's responsibility separately.
-  // No gutter → entire relay surface is the chat pane (H-scroll if needed).
   const primaryColumns = inferredPrimary < relayCols ? inferredPrimary : relayCols;
 
   const sidebarColumns = Math.max(
@@ -82,6 +80,8 @@ export function computeTerminalViewport(opts: {
     ? LEFT_INSET + totalColumns * cellAdvance + RIGHT_PAD
     : primaryWidth;
 
+  const chatOverflows = primaryWidth > opts.windowWidth + 0.5;
+
   return {
     primaryColumns,
     totalColumns,
@@ -91,7 +91,8 @@ export function computeTerminalViewport(opts: {
     displayColumns,
     primaryWidth,
     fullContentWidth,
-    clipWidth: Math.ceil(primaryWidth),
+    clipWidth: chatOverflows ? undefined : Math.ceil(Math.min(opts.windowWidth, primaryWidth)),
+    chatOverflows,
     hasSidebar,
   };
 }

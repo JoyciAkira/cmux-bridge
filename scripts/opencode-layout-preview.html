@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <title>OpenCode layout preview — cmux-bridge</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #111; color: #ccc; font-family: system-ui, sans-serif; padding: 16px; }
+    h1 { font-size: 14px; color: #888; margin: 0 0 12px; }
+    .row-ui { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+    .phone {
+      width: 390px; border: 2px solid #444; border-radius: 24px; overflow: hidden;
+      background: #0d0d0d; box-shadow: 0 8px 32px #0008;
+    }
+    .phone-header { padding: 8px 12px; background: #1a1a1a; font-size: 12px; border-bottom: 1px solid #333; }
+    .viewport { width: 390px; height: 520px; overflow: hidden; position: relative; background: #0d0d0d; }
+    .hscroll { width: 390px; height: 520px; overflow-x: auto; overflow-y: hidden; }
+    .canvas { position: relative; background: #0d0d0d; }
+    .term-row { position: absolute; left: 0; height: 15px; white-space: pre; font-family: Menlo, monospace; font-size: 13px; line-height: 15px; }
+    .run { position: absolute; top: 0; white-space: pre; }
+    .gutter { position: absolute; top: 0; bottom: 0; width: 2px; background: #f97316; opacity: 0.7; pointer-events: none; }
+    .metrics { font-family: Menlo, monospace; font-size: 11px; line-height: 1.5; max-width: 420px; }
+    .ok { color: #4ade80; } .bad { color: #f87171; } .warn { color: #fbbf24; }
+    button { margin: 4px 4px 4px 0; padding: 6px 10px; background: #222; color: #ccc; border: 1px solid #444; border-radius: 6px; cursor: pointer; }
+    button:hover { background: #333; }
+    #checks { margin-top: 12px; font-family: Menlo, monospace; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>OpenCode layout preview (390px phone) — stesso pipeline TS dell'app</h1>
+  <div class="row-ui">
+    <div class="phone">
+      <div class="phone-header">TERMINAL · OpenCode · <span id="live">live</span></div>
+      <div class="hscroll" id="hscroll">
+        <div class="canvas" id="canvas"></div>
+      </div>
+    </div>
+    <pre class="metrics" id="metrics"></pre>
+  </div>
+  <div>
+    <button type="button" id="btnStart">Scroll chat → inizio</button>
+    <button type="button" id="btnEnd">Scroll chat → fine</button>
+    <button type="button" id="btnSidebar">Scroll sidebar (context ›)</button>
+  </div>
+  <div id="checks"></div>
+  <script>
+    const LEFT = 8, TOP = 8, RIGHT = 8;
+    const CHROME_RE = /MCP|LSP|Todo|Connected|OpenCode|playwright|websearch|ctrl\+p/i;
+
+    async function load() {
+      const res = await fetch('./layout-preview.json');
+      const { layout, metrics, rows } = await res.json();
+      const advance = layout.cellAdvance;
+      const lh = layout.lineHeight;
+      const primary = layout.primaryColumns;
+      const canvasW = layout.primaryWidth;
+      const canvasH = TOP + rows.length * lh + 16;
+
+      const canvas = document.getElementById('canvas');
+      canvas.style.width = canvasW + 'px';
+      canvas.style.height = canvasH + 'px';
+
+      const gutterX = LEFT + primary * advance;
+      const gutter = document.createElement('div');
+      gutter.className = 'gutter';
+      gutter.style.left = gutterX + 'px';
+      gutter.style.height = canvasH + 'px';
+      canvas.appendChild(gutter);
+
+      for (const row of rows) {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'term-row';
+        rowEl.style.top = (TOP + row.i * lh) + 'px';
+        rowEl.style.width = canvasW + 'px';
+        rowEl.style.height = lh + 'px';
+        for (const run of row.runs) {
+          if (run.start >= primary) continue;
+          const span = document.createElement('span');
+          span.className = 'run';
+          span.style.left = (LEFT + run.start * advance) + 'px';
+          span.style.fontSize = layout.renderFontSize + 'px';
+          span.style.lineHeight = lh + 'px';
+          const allowed = Math.min(run.cols, primary - run.start);
+          span.textContent = run.text.slice(0, allowed);
+          if (CHROME_RE.test(run.text)) span.style.color = '#f87171';
+          else if (run.text.includes('$')) span.style.color = '#fbbf24';
+          else if (run.text.includes('/Users')) span.style.color = '#67e8f9';
+          else span.style.color = '#ccc';
+          rowEl.appendChild(span);
+        }
+        canvas.appendChild(rowEl);
+      }
+
+      document.getElementById('metrics').textContent = [
+        'layout policy (deterministico)',
+        `fontSize: ${layout.renderFontSize}px (min 9)`,
+        `cellAdvance: ${advance}px`,
+        `displayColumns: ${layout.displayColumns} (fit phone)`,
+        `primaryColumns: ${primary} (clip chat|chrome, trimmed coords)`,
+        `primaryWidth: ${Math.round(canvasW)}px`,
+        `windowWidth: 390px`,
+        `chatOverflows: ${layout.chatOverflows}`,
+        `hasSidebar: ${layout.hasSidebar}`,
+        `clipWidth: ${layout.clipWidth ?? 'undefined → H-scroll'}`,
+      ].join('\n');
+
+      const hscroll = document.getElementById('hscroll');
+      document.getElementById('btnStart').onclick = () => { hscroll.scrollLeft = 0; runChecks(layout, hscroll); };
+      document.getElementById('btnEnd').onclick = () => {
+        hscroll.scrollLeft = Math.max(0, canvasW - 390);
+        runChecks(layout, hscroll);
+      };
+      document.getElementById('btnSidebar').onclick = () => {
+        hscroll.scrollLeft = Math.max(0, layout.fullContentWidth - 390);
+        runChecks(layout, hscroll);
+      };
+
+      runChecks(layout, hscroll);
+    }
+
+    function visibleText(hscroll) {
+      const rect = hscroll.getBoundingClientRect();
+      const out = [];
+      document.querySelectorAll('.run').forEach((el) => {
+        const r = el.getBoundingClientRect();
+        if (r.right > rect.left && r.left < rect.right) out.push(el.textContent);
+      });
+      return out.join(' ');
+    }
+
+    function runChecks(layout, hscroll) {
+      hscroll.scrollLeft = 0;
+      const atStart = visibleText(hscroll);
+      const chromeAtStart = CHROME_RE.test(atStart);
+      const fontOk = layout.renderFontSize >= 9;
+      const overflowOk = layout.chatOverflows && layout.primaryWidth > 390;
+
+      const lines = [
+        fontOk
+          ? `<span class="ok">✓ font ${layout.renderFontSize}px ≥ 9</span>`
+          : `<span class="bad">✗ font troppo piccolo: ${layout.renderFontSize}px</span>`,
+        overflowOk
+          ? `<span class="ok">✓ chatOverflows — pan orizzontale atteso</span>`
+          : `<span class="warn">? chat non overflow (width ${Math.round(layout.primaryWidth)})</span>`,
+        !chromeAtStart
+          ? `<span class="ok">✓ scroll=0: niente chrome MCP/LSP nel viewport</span>`
+          : `<span class="bad">✗ scroll=0: chrome visibile: ${atStart.slice(0, 80)}…</span>`,
+      ];
+      document.getElementById('checks').innerHTML = lines.join('<br/>');
+    }
+
+    load().catch((e) => {
+      document.getElementById('checks').innerHTML = `<span class="bad">Errore: ${e.message}. Esegui: node scripts/gen-layout-preview-data.mjs</span>`;
+    });
+  </script>
+</body>
+</html>

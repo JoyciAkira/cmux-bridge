@@ -16,12 +16,11 @@ export function useMeasuredCellAdvance(): (fontSize: number) => number {
 
 export function useFittedTerminalMetrics(
   windowWidth: number,
-  cols: number,
   preferredFontSize: number,
 ): ReturnType<typeof fitTerminalMetrics> {
   const measureAdvance = useMeasuredCellAdvance();
   return useMemo(
-    () => fitTerminalMetrics(windowWidth, cols, preferredFontSize, measureAdvance),
-    [windowWidth, cols, preferredFontSize, measureAdvance],
+    () => fitTerminalMetrics(windowWidth, preferredFontSize, measureAdvance),
+    [windowWidth, preferredFontSize, measureAdvance],
   );
 }

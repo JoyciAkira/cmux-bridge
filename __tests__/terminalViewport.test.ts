@@ -11,7 +11,7 @@ describe('terminalViewport', () => {
   ];
 
   it('fits primary cols to screen width', () => {
-    const metrics = fitTerminalMetrics(390, 80, 13);
+    const metrics = fitTerminalMetrics(390, 13);
     const layout = computeTerminalViewport({
       windowWidth: 390,
       cols: 80,
@@ -29,7 +29,7 @@ describe('terminalViewport', () => {
   it('does not treat in-bounds long chat as sidebar', () => {
     const chatOnly = [buildRenderRow('short'), buildRenderRow('x'.repeat(79))];
     expect(rowExtendsPastPrimary(chatOnly[1], 80)).toBe(false);
-    const metrics = fitTerminalMetrics(390, 80, 13);
+    const metrics = fitTerminalMetrics(390, 13);
     const layout = computeTerminalViewport({
       windowWidth: 390,
       cols: 80,
@@ -43,7 +43,7 @@ describe('terminalViewport', () => {
   });
 
   it('detects sidebar cursor', () => {
-    const metrics = fitTerminalMetrics(390, 80, 13);
+    const metrics = fitTerminalMetrics(390, 13);
     const layout = computeTerminalViewport({
       windowWidth: 390,
       cols: 80,

@@ -24,7 +24,7 @@ import { TerminalRenderCache } from './terminalRenderCache';
 import { TerminalCopyBar } from './TerminalSelectionLayer';
 import { computeTerminalViewport } from './terminalViewport';
 import { StickyPrimaryColumns } from './stickyPrimaryColumns';
-import { isTuiViewport } from './inferPrimaryColumns';
+import { isTuiViewport, trimOpenCodePanePrefix } from './inferPrimaryColumns';
 import { plainTerminalLine } from './ansiParser';
 import { useFittedTerminalMetrics } from './useTerminalMetrics';
 import {
@@ -93,16 +93,14 @@ const TerminalView = React.memo(function TerminalView({ surfaceKey, onScrollKey 
   const fontSize = Math.round((localFontSize ?? DEFAULT_FONT_SIZE) * fontScale);
 
   const plainRowsForLayout = useMemo(
-    () => lines.map((line) => plainTerminalLine(line.text)),
+    () => lines.map((line) => trimOpenCodePanePrefix(plainTerminalLine(line.text))),
     [lines],
   );
   const layoutCols = useMemo(
     () => stickyPrimaryRef.current.next(plainRowsForLayout, cols),
     [plainRowsForLayout, cols],
   );
-  // Font metrics: preferred size only. softFitCols=1 disables shrink-to-fit.
-  // primaryColumns (from gutter/┃) is a CLIP boundary — never a font-fit target.
-  const fittedMetrics = useFittedTerminalMetrics(windowWidth, 1, fontSize);
+  const fittedMetrics = useFittedTerminalMetrics(windowWidth, fontSize);
   const tuiMode = useMemo(
     () => isTuiViewport(plainRowsForLayout, cols),
     [plainRowsForLayout, cols],
@@ -158,11 +156,13 @@ const TerminalView = React.memo(function TerminalView({ surfaceKey, onScrollKey 
     primaryWidth,
     fullContentWidth,
     clipWidth,
+    chatOverflows,
     hasSidebar,
   } = viewport;
 
-  // Chat pane only until user opens context; then full surface including sidebar.
+  const chatScrollable = hasSidebar && chatOverflows;
   const canvasWidth = sidebarOpen && hasSidebar ? fullContentWidth : primaryWidth;
+  const horizontalScroll = (hasSidebar && sidebarOpen) || chatScrollable;
 
   const contentHeightPx = TOP_INSET
     + lines.length * lineHeight
@@ -405,15 +405,16 @@ const TerminalView = React.memo(function TerminalView({ surfaceKey, onScrollKey 
   const handleHorizontalScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const x = e.nativeEvent.contentOffset.x;
     scrollOffsetXRef.current = x;
-    if (x > 8) {
+    if (!hasSidebar) return;
+    const sidebarX = Math.max(0, LEFT_INSET + primaryColumns * advance - windowWidth * 0.35);
+    if (x > sidebarX) {
       userPannedHorizontal.current = true;
       setSidebarOpen(true);
-    }
-    if (x < 4) {
+    } else if (x < 4) {
       userPannedHorizontal.current = false;
       setSidebarOpen(false);
     }
-  }, []);
+  }, [hasSidebar, primaryColumns, advance, windowWidth]);
 
   const scrollToSidebar = useCallback(() => {
     setSidebarOpen(true);
@@ -459,13 +460,15 @@ const TerminalView = React.memo(function TerminalView({ surfaceKey, onScrollKey 
     />
   );
 
-  const clippedCanvas = (
+  const clippedCanvas = horizontalScroll ? (
+    canvas
+  ) : (
     <View style={[styles.clipWrap, { width: windowWidth }]}>
       {canvas}
     </View>
   );
 
-  const bodyInner = hasSidebar && sidebarOpen ? (
+  const bodyInner = horizontalScroll ? (
     <ScrollView
       ref={hScrollRef}
       horizontal

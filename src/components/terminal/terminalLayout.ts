@@ -10,21 +10,18 @@ export interface FittedTerminalMetrics {
 }
 
 const ADVANCE_SAFETY = 1.06;
-/** Never shrink below this — primaryColumns is a clip boundary, not a fit target. */
 const MIN_FONT_SIZE = 9;
+/** Soft-fit budget: columns we try to fit without shrinking below MIN_FONT_SIZE. */
+const PHONE_SOFT_FIT_COLS = 48;
 
 /**
- * Metrics at the preferred font size.
+ * Phone font metrics at the preferred size.
  *
- * `softFitCols` is an optional soft budget: we may shrink slightly so that many
- * columns fit, but never below MIN_FONT_SIZE. Do NOT pass OpenCode
- * `primaryColumns` (~103) or relay `cols` (~143) here — that forces unreadably
- * small text. Pass a phone-scale budget (e.g. displayColumns from a prior pass)
- * or omit soft-fit entirely (softFitCols <= 0 / 1).
+ * Never pass relay `cols` (~143) or inferred `primaryColumns` (~98) here — that
+ * shrinks text to illegible sizes. We only soft-fit to ~48 phone columns.
  */
 export function fitTerminalMetrics(
   windowWidth: number,
-  softFitCols: number,
   preferredFontSize: number,
   measureAdvance: (fontSize: number) => number = estimateCellAdvance,
 ): FittedTerminalMetrics {
@@ -32,12 +29,12 @@ export function fitTerminalMetrics(
   let renderFontSize = Math.min(24, Math.max(MIN_FONT_SIZE, Math.round(preferredFontSize)));
   let cellAdvance = measureAdvance(renderFontSize);
 
-  const targetCols = Math.max(0, softFitCols);
-  if (targetCols > 1) {
-    while (targetCols * cellAdvance > usable + 0.5 && renderFontSize > MIN_FONT_SIZE) {
-      renderFontSize -= 1;
-      cellAdvance = measureAdvance(renderFontSize);
-    }
+  while (
+    PHONE_SOFT_FIT_COLS * cellAdvance > usable + 0.5
+    && renderFontSize > MIN_FONT_SIZE
+  ) {
+    renderFontSize -= 1;
+    cellAdvance = measureAdvance(renderFontSize);
   }
 
   const safeAdvance = cellAdvance * ADVANCE_SAFETY;

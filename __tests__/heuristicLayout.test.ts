@@ -72,7 +72,7 @@ describe('viewport with inferred primary', () => {
       buildRenderRow(('ninth sample row !!').padEnd(103, ' ') + 'v'.padEnd(40, ' ')),
       buildRenderRow(('tenth sample row !!').padEnd(103, ' ') + 'u'.padEnd(40, ' ')),
     ];
-    const metrics = fitTerminalMetrics(390, 1, 13);
+    const metrics = fitTerminalMetrics(390, 13);
     const layout = computeTerminalViewport({
       windowWidth: 390,
       cols: 143,
@@ -83,8 +83,8 @@ describe('viewport with inferred primary', () => {
     expect(layout.primaryColumns).toBeGreaterThanOrEqual(95);
     expect(layout.primaryColumns).toBeLessThan(120);
     expect(layout.hasSidebar).toBe(true);
-    expect(layout.renderFontSize).toBe(13);
-    expect(layout.primaryWidth).toBeGreaterThan(390);
+    expect(layout.renderFontSize).toBeGreaterThanOrEqual(9);
+    expect(layout.chatOverflows).toBe(true);
   });
 });
 
