@@ -3,7 +3,7 @@
 **Version:** 1.0.0-draft  
 **Status:** Active  
 **Owner:** @JoyciAkira  
-**Last updated:** 2026-06-27
+**Last updated:** 2026-07-13
 
 ---
 
@@ -64,9 +64,11 @@ Cmux Bridge lets developers control their macOS `cmux` terminal sessions from an
 #### F1 — Mac Connection Manager
 - Add a Mac by Tailscale IP + port (default 4399)
 - Optional label ("Work MacBook", "Home Studio")
-- Test connection before saving
+- Optional relay socket password (`socketPassword` in secure store)
+- Test connection before saving (`connectionTest.ts`)
 - Secure credential storage via Keychain (expo-secure-store)
-- Multi-Mac support (list view, swipe to delete)
+- Multi-Mac support (list view, swipe to delete, long-press edit)
+- Stato `reconnecting` + `lastError` in UI terminale
 
 #### F2 — Workspace & Surface Browser
 - List all `cmux` workspaces and surfaces from the relay
@@ -75,36 +77,53 @@ Cmux Bridge lets developers control their macOS `cmux` terminal sessions from an
 - Tap to open terminal view
 
 #### F3 — Terminal Renderer
-- Full ANSI/VT100 escape sequence parsing
-- 256-color support
+- Full ANSI/VT100 escape sequence parsing (SGR, 256/RGB, bright bg 100–107, dim/italic/strike/concealed, OSC title drop, CSI non-SGR drop)
+- **Implemented:** `@shopify/react-native-skia` Canvas grid renderer with measured cell advance (`font.measureText`), bold/italic fonts, dim opacity, underline/strikethrough
+- CJK double-width + emoji text-presentation via `terminalCellWidth` / `terminalGlyphs`
+- Cursor blink overlay isolato (`TerminalCursorOverlay`) — non invalida il canvas Skia/fallback
+- **Performance (v1):** cache `TerminalRenderCache` per righe ANSI invariate; viewport culling; diff batch su `requestAnimationFrame`
+- **Layout (deterministico):** `inferPrimaryColumns` trova il confine chat|chrome (gutter spazi / `┃`); quel valore è solo **clip**, mai target del font. `fitTerminalMetrics` usa il font preferito (min 9px, soft-fit disabilitato in TerminalView). Se la chat è più larga del telefono → pan orizzontale; sidebar MCP solo con tap **context ›**. **TUI mode** (OpenCode/NEXUS): pan verticale → `up`/`down`/`pgup`/`pgdn` remoti
+- **Glifi:** icone Claude/OpenCode (✻✶⏺⚙…) → ASCII; block drawing intatti
+- **Colori:** heuristic ANSI finché cmux non espone escape (issue #4273)
+- **Copy/selection:** modalità selezione (pulsante ⎘) con drag per range, copia selezione/riga/tutto via `expo-clipboard`
 - Scrollback buffer (configurable, default 500 lines)
 - Pinch-to-zoom font size
-- Monospace font (JetBrains Mono or SF Mono fallback)
-- Copy selection support
+- Monospace font (Menlo / system monospace)
 
 #### F4 — Command Input
-- On-screen keyboard with ctrl/alt/esc macro keys
-- Send arbitrary text input via relay `send` command
-- Predefined quick-send shortcuts (user-configurable)
-- Send ctrl+c, ctrl+z, ctrl+d one-tap
+- **LIVE mode (default):** keystroke-by-keystroke to TUI via `surface.send_text` / `surface.send_key` (serialized input queue; focus only on subscribe + special keys)
+- **CMD mode:** line-at-a-time via `submitCommand`
+- On-screen keyboard con navigazione (`home`, `end`, `pgup`, `pgdn`, `delete`), ctrl/alt/esc e slash shortcuts (`/`, `/new`, `$`)
+- Predefined quick-send snippets from relay `/v1/state`
+- Send ctrl+c, tab, arrows one-tap
+
+#### Protocol sync (relay)
+- `screen.full` / `screen.diff` with `rev` ordering (stale frames ignored)
+- `screen.checksum` reconcile via `surface.read_text` on hash mismatch (`screenHasher.ts`)
+- Diff ops typed (`row`, `cursor`, `clear`) — `clear` svuota righe esistenti senza resettare row count
+- **Rimosso:** `appendOutput` / `vt100Engine.ts` (schermo solo via `screen.full` / `screen.diff`)
 
 #### F5 — Push Notifications
-- APNs (iOS) and FCM (Android) integration with relay
-- Notification triggers: agent completes, error detected, awaiting input
-- Per-workspace notification toggle
-- Deep link: tap notification → opens that workspace directly
-- Background fetch for battery-efficient polling fallback
+- APNs (iOS) and FCM (Android) integration with relay (`registerPushToken` best-effort su `/apns`, `/fcm`, `/push`)
+- **Limitazione dev:** account Apple Developer gratuito non supporta `aps-environment`; plugin push rimosso da `app.json`, notifiche **locali** via `expo-notifications` restano attive
+- Notification triggers: agent completes, error detected, awaiting input (`agentEvents.ts` + `useRelay`)
+- Per-workspace notification mute (toggle 🔔 nella lista workspace)
+- Global notifications toggle in Impostazioni
+- Deep link: tap notification → opens that Mac/workspace (`notifications.ts`)
+- **Parziale:** foreground resubscribe via `AppState` (non `expo-background-fetch`)
 
 #### F6 — Biometric Unlock
-- FaceID / TouchID gate on app open
-- Optional: per-Mac biometric confirmation before sending commands
-- Falls back to device passcode
+- **Parziale:** FaceID/TouchID al tap Mac nella lista (esistente, non modificato in questo ciclo)
+- **Non implementato:** gate all'apertura app; conferma biometrica prima di ogni comando
 
 #### F7 — Theme & Accessibility
 - Dark mode only (v1.0)
-- Dynamic Type support (iOS)
-- High-contrast mode
+- Dynamic Type: scala font terminale con `PixelRatio.getFontScale()`
+- High-contrast mode (toggle Impostazioni → `resolveThemeColors`)
 - Reduced motion support
+- Viewport virtualization Skia (solo righe visibili + overscan)
+- Selezione wide-char aware (`terminalSelection.ts`)
+- Copia con toast + vibrazione leggera
 
 ### 5.2 Nice to Have (v1.1+)
 
