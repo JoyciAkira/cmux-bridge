@@ -38,6 +38,7 @@ describe('exportLayoutPreview', () => {
     const out = path.join(__dirname, '..', 'scripts', 'layout-preview.json');
     fs.writeFileSync(out, JSON.stringify({ layout, metrics, rows }, null, 2));
     expect(layout.renderFontSize).toBeGreaterThanOrEqual(9);
-    expect(layout.chatOverflows).toBe(true);
+    expect(layout.primaryWidth).toBe(390);
+    expect(layout.clipWidth).toBe(390);
   });
 });

@@ -84,7 +84,8 @@ describe('viewport with inferred primary', () => {
     expect(layout.primaryColumns).toBeLessThan(120);
     expect(layout.hasSidebar).toBe(true);
     expect(layout.renderFontSize).toBeGreaterThanOrEqual(9);
-    expect(layout.chatOverflows).toBe(true);
+    expect(layout.primaryWidth).toBe(390);
+    expect(layout.primaryWidth).toBe(390);
   });
 });
 

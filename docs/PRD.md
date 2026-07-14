@@ -82,7 +82,7 @@ Cmux Bridge lets developers control their macOS `cmux` terminal sessions from an
 - CJK double-width + emoji text-presentation via `terminalCellWidth` / `terminalGlyphs`
 - Cursor blink overlay isolato (`TerminalCursorOverlay`) — non invalida il canvas Skia/fallback
 - **Performance (v1):** cache `TerminalRenderCache` per righe ANSI invariate; viewport culling; diff batch su `requestAnimationFrame`
-- **Layout (deterministico):** `trimOpenCodePanePrefix` + `inferPrimaryColumns` sulle righe **trimmed** (stesso spazio di `buildRenderRow`) → confine chat|chrome ~col 98–103. `primaryColumns` è **solo clip colonne**, mai target del font. `fitTerminalMetrics` soft-fit ~48 colonne telefono (font min 9px). Chat più larga del telefono → `chatOverflows` + pan orizzontale; sidebar MCP solo con tap **context ›** o scroll oltre il confine. Harness visivo: `scripts/opencode-layout-preview.html`. **TUI mode**: pan verticale → tasti remoti
+- **Layout (deterministico):** righe **trimmed** per `inferPrimaryColumns` (coords render); font preferito (min 9px); canvas = `windowWidth`; `columnLimit = primaryColumns` nasconde sidebar; pan orizzontale solo per **context ›**. HUD debug in `__DEV__`. Preview: Impostazioni → *Preview layout NEXUS* o `cmuxbridge:///dev/terminal`
 - **Glifi:** icone Claude/OpenCode (✻✶⏺⚙…) → ASCII; block drawing intatti
 - **Colori:** heuristic ANSI finché cmux non espone escape (issue #4273)
 - **Copy/selection:** modalità selezione (pulsante ⎘) con drag per range, copia selezione/riga/tutto via `expo-clipboard`

@@ -22,8 +22,8 @@ describe('terminalViewport', () => {
     expect(layout.primaryColumns).toBe(80);
     expect(layout.hasSidebar).toBe(true);
     expect(layout.fullContentWidth).toBeGreaterThan(layout.primaryWidth);
-    // Font may stay large; chat pixel width can exceed the phone (H-scroll).
     expect(layout.renderFontSize).toBeGreaterThanOrEqual(9);
+    expect(layout.primaryWidth).toBe(390);
   });
 
   it('does not treat in-bounds long chat as sidebar', () => {

@@ -156,13 +156,12 @@ const TerminalView = React.memo(function TerminalView({ surfaceKey, onScrollKey 
     primaryWidth,
     fullContentWidth,
     clipWidth,
-    chatOverflows,
     hasSidebar,
+    displayColumns,
   } = viewport;
 
-  const chatScrollable = hasSidebar && chatOverflows;
   const canvasWidth = sidebarOpen && hasSidebar ? fullContentWidth : primaryWidth;
-  const horizontalScroll = (hasSidebar && sidebarOpen) || chatScrollable;
+  const horizontalScroll = hasSidebar && sidebarOpen;
 
   const contentHeightPx = TOP_INSET
     + lines.length * lineHeight
@@ -439,6 +438,10 @@ const TerminalView = React.memo(function TerminalView({ surfaceKey, onScrollKey 
     setSelectionMode(false);
   }, []);
 
+  const canvasHeight = tuiMode && viewportHeightPx > 0
+    ? Math.max(contentHeightPx, viewportHeightPx)
+    : contentHeightPx;
+
   const canvas = (
     <TerminalCanvas
       renderRows={renderRows}
@@ -448,7 +451,7 @@ const TerminalView = React.memo(function TerminalView({ surfaceKey, onScrollKey 
       maxRenderedColumns={maxRenderedColumns}
       fontSize={renderFontSize}
       width={canvasWidth}
-      height={contentHeightPx}
+      height={canvasHeight}
       primaryColumns={primaryColumns}
       columnLimit={columnLimit}
       cellAdvance={advance}
@@ -460,9 +463,7 @@ const TerminalView = React.memo(function TerminalView({ surfaceKey, onScrollKey 
     />
   );
 
-  const clippedCanvas = horizontalScroll ? (
-    canvas
-  ) : (
+  const clippedCanvas = (
     <View style={[styles.clipWrap, { width: windowWidth }]}>
       {canvas}
     </View>
@@ -589,6 +590,14 @@ const TerminalView = React.memo(function TerminalView({ surfaceKey, onScrollKey 
         selectionMode={selectionMode}
         onClear={clearSelection}
       />
+
+      {__DEV__ && hasSidebar && (
+        <View style={styles.debugHud} pointerEvents="none">
+          <Text style={styles.debugHudText}>
+            {`font ${renderFontSize} · vis ${displayColumns} · clip ${primaryColumns}/${cols}${sidebarOpen ? ' · ctx' : ''}`}
+          </Text>
+        </View>
+      )}
     </View>
   );
 });
@@ -679,6 +688,22 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     fontSize: FontSizes.sm,
     fontWeight: '600',
+    fontFamily: 'monospace',
+  },
+  debugHud: {
+    position: 'absolute',
+    left: Spacing.sm,
+    top: Spacing.sm,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: Radii.sm,
+    backgroundColor: 'rgba(0,0,0,0.72)',
+    borderWidth: 1,
+    borderColor: Colors.panelBorder,
+  },
+  debugHudText: {
+    color: Colors.accent,
+    fontSize: 10,
     fontFamily: 'monospace',
   },
 });

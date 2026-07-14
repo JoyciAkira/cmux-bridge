@@ -13,28 +13,40 @@ import { Colors, Spacing, FontSizes, Radii } from '../../src/theme';
 import { destroyRelayClient } from '../../src/services/relay';
 import { useMacsStore } from '../../src/store/macs';
 import { usePrefsStore } from '../../src/store/prefs';
+import { router } from 'expo-router';
 
 export default function SettingsScreen() {
   const macs = useMacsStore((s) => s.macs);
-  const { scrollbackLines, terminalFontSize, reduceMotion, setScrollback, setFontSize, setReduceMotion } =
-    usePrefsStore();
+  const {
+    scrollbackLines,
+    terminalFontSize,
+    reduceMotion,
+    notificationsEnabled,
+    highContrast,
+    mutedWorkspaces,
+    setScrollback,
+    setFontSize,
+    setReduceMotion,
+    setNotificationsEnabled,
+    setHighContrast,
+  } = usePrefsStore();
 
   const handleDisconnectAll = () => {
-    Alert.alert('Disconnect all', 'Close all relay connections?', [
+    Alert.alert('Disconnetti tutti', 'Chiudere tutte le connessioni relay?', [
       {
-        text: 'Disconnect',
+        text: 'Disconnetti',
         style: 'destructive',
         onPress: () => macs.forEach((m) => destroyRelayClient(m.id)),
       },
-      { text: 'Cancel', style: 'cancel' },
+      { text: 'Annulla', style: 'cancel' },
     ]);
   };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Section title="Terminal">
+      <Section title="Terminale">
         <StepRow
-          label="Font size"
+          label="Dimensione font"
           value={terminalFontSize}
           unit="pt"
           min={9}
@@ -47,31 +59,65 @@ export default function SettingsScreen() {
           onChange={(n) => void setScrollback(n)}
         />
         <SwitchRow
-          label="Reduce motion"
-          hint="Disables animated scroll"
+          label="Riduci animazioni"
+          hint="Disabilita lo scroll animato"
           value={reduceMotion}
           onToggle={(v) => void setReduceMotion(v)}
         />
+        <SwitchRow
+          label="Alto contrasto"
+          hint="Colori più leggibili nel terminale"
+          value={highContrast}
+          onToggle={(v) => void setHighContrast(v)}
+        />
       </Section>
 
-      <Section title="Connections">
-        <Row label="Active Macs" value={String(macs.length)} />
+      <Section title="Notifiche">
+        <SwitchRow
+          label="Notifiche agente"
+          hint="Avvisi su completamento, errori e input in attesa"
+          value={notificationsEnabled}
+          onToggle={(v) => void setNotificationsEnabled(v)}
+        />
+        {mutedWorkspaces.length > 0 && (
+          <Row
+            label="Workspace silenziati"
+            value={String(mutedWorkspaces.length)}
+          />
+        )}
+      </Section>
+
+      <Section title="Connessioni">
+        <Row label="Mac attivi" value={String(macs.length)} />
         <TouchableOpacity
           style={styles.dangerBtn}
           onPress={handleDisconnectAll}
           accessibilityRole="button"
-          accessibilityLabel="Disconnect all Macs"
+          accessibilityLabel="Disconnetti tutti i Mac"
         >
-          <Text style={styles.dangerLabel}>Disconnect all</Text>
+          <Text style={styles.dangerLabel}>Disconnetti tutti</Text>
         </TouchableOpacity>
       </Section>
 
-      <Section title="About">
+      <Section title="Informazioni">
         <Row label="App" value="Cmux Bridge" />
-        <Row label="Version" value="1.0.0" />
-        <Row label="Protocol" value="cmux-relay v1" />
-        <Row label="License" value="MIT" />
+        <Row label="Versione" value="1.0.0" />
+        <Row label="Protocollo" value="cmux-relay v1" />
+        <Row label="Licenza" value="MIT" />
       </Section>
+
+      {__DEV__ && (
+        <Section title="Sviluppo">
+          <TouchableOpacity
+            style={styles.devBtn}
+            onPress={() => router.push('/dev/terminal')}
+            accessibilityRole="button"
+            accessibilityLabel="Apri preview layout NEXUS con TerminalView reale"
+          >
+            <Text style={styles.devLabel}>Preview layout NEXUS (Skia)</Text>
+          </TouchableOpacity>
+        </Section>
+      )}
     </ScrollView>
   );
 }
@@ -197,6 +243,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dangerLabel: { color: Colors.error, fontSize: FontSizes.md },
+  devBtn: {
+    marginHorizontal: Spacing.md,
+    marginVertical: Spacing.sm,
+    paddingVertical: Spacing.md,
+    borderRadius: Radii.md,
+    borderWidth: 1,
+    borderColor: Colors.accent,
+    alignItems: 'center',
+  },
+  devLabel: { color: Colors.accent, fontSize: FontSizes.md, fontWeight: '600' },
 });
 
 const sectionStyles = StyleSheet.create({

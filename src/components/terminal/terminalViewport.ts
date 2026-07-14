@@ -4,22 +4,16 @@ import type { FittedTerminalMetrics } from './terminalLayout';
 import { inferPrimaryColumns } from './inferPrimaryColumns';
 
 export interface TerminalViewportLayout extends FittedTerminalMetrics {
-  /** Chat pane width in columns (clip boundary from gutter / ┃, render coords). */
+  /** Chat pane column clip (render coords, trimmed plain rows). */
   primaryColumns: number;
-  /** Full row width including optional right sidebar (context, MCP, …). */
   totalColumns: number;
-  /** Pixel width of the chat pane content (may exceed windowWidth → H-scroll). */
+  /** Always the phone viewport width when chat-only. */
   primaryWidth: number;
-  /** Full canvas width — scroll right past primaryColumns to reveal sidebar. */
   fullContentWidth: number;
-  /** Pixel clip at the phone viewport edge (undefined when chat H-scrolls). */
-  clipWidth: number | undefined;
-  /** Chat pane is wider than the phone — pan horizontally within chat. */
-  chatOverflows: boolean;
+  clipWidth: number;
   hasSidebar: boolean;
 }
 
-/** Content extends into the right sidebar column (beyond primary cols). */
 export function rowExtendsPastPrimary(row: TerminalRenderRow, primaryColumns: number): boolean {
   if (row.columns > primaryColumns) return true;
   return row.runs.some((run) => run.startColumn + run.columns > primaryColumns);
@@ -41,11 +35,10 @@ export function maxColumnsPastPrimary(
 }
 
 /**
- * Deterministic viewport:
- * 1. `plainRows` must be trim-aligned with `buildRenderRow` (pane prefix removed).
- * 2. `primaryColumns` = inferred chat|chrome boundary — column clip only.
- * 3. Font metrics come from `fitTerminalMetrics` (phone budget, not primaryColumns).
- * 4. Chat wider than phone → `chatOverflows` + horizontal pan within chat.
+ * Viewport for phone:
+ * - `plainRows` = trimmed (same coords as buildRenderRow).
+ * - `primaryColumns` clips sidebar chrome; canvas width stays `windowWidth`.
+ * - Font is NOT shrunk to primaryColumns — long chat lines clip at screen edge.
  */
 export function computeTerminalViewport(opts: {
   windowWidth: number;
@@ -75,12 +68,10 @@ export function computeTerminalViewport(opts: {
     ? Math.max(primaryColumns, sidebarColumns, opts.cursorX + 1)
     : primaryColumns;
 
-  const primaryWidth = LEFT_INSET + primaryColumns * cellAdvance + RIGHT_PAD;
+  const primaryWidth = opts.windowWidth;
   const fullContentWidth = hasSidebar
     ? LEFT_INSET + totalColumns * cellAdvance + RIGHT_PAD
     : primaryWidth;
-
-  const chatOverflows = primaryWidth > opts.windowWidth + 0.5;
 
   return {
     primaryColumns,
@@ -91,13 +82,11 @@ export function computeTerminalViewport(opts: {
     displayColumns,
     primaryWidth,
     fullContentWidth,
-    clipWidth: chatOverflows ? undefined : Math.ceil(Math.min(opts.windowWidth, primaryWidth)),
-    chatOverflows,
+    clipWidth: opts.windowWidth,
     hasSidebar,
   };
 }
 
-/** Cursor is in the optional right sidebar (beyond main terminal cols). */
 export function cursorInSidebar(cursorX: number, primaryColumns: number): boolean {
   return cursorX >= primaryColumns;
 }
